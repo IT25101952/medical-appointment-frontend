@@ -6,6 +6,7 @@ import { loginSchema } from "@/lib/validations/auth";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Loader2, Lock, Mail } from "lucide-react";
+import { loginAction } from "@/lib/actions/auth-actions";
 
 import { Field, FieldLabel } from "@/components/ui/field";
 import {
@@ -22,24 +23,19 @@ export function LoginForm() {
       onSubmit: loginSchema,
     },
     onSubmit: async ({ value }) => {
-      try {
-        const response = await fetch("/api/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(value),
-        });
+      const result = await loginAction(value);
 
-        if (!response.ok) throw new Error("Invalid credentials");
+      if (result.success) {
         toast.success("Login successful!");
-        router.push("/dashboard");
-      } catch (error) {
+        router.push("/admin/dashboard");
+        router.refresh();
+      } else {
         toast.error("Authentication Failed", {
-          description: "Please check your credentials.",
+          description: result.error || "Please check your credentials.",
         });
       }
     },
   });
-
   return (
     <form
       onSubmit={(e) => {
