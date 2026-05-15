@@ -153,4 +153,8 @@
   .bento {
     @apply p-4 bg-card rounded-lg flex flex-col items-center border border-border;
   }
+
+  .form-error {
+    @apply text-xs font-light text-destructive mt-1;
+  }
 }
