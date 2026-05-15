@@ -19,5 +19,10 @@ import {
 } from "@/components/ui/input-group";
 
 export function RegisterForm() {
-  
+  <div className="max-w-lg mx-auto mt-16 p-6 rounded-lg shadow-lg bg-white">
+    <h2 className="text-2xl font-semibold text-center mb-6">
+      Create Your Account
+    </h2>
+    <RegisterForm />
+  </div>;
 }
