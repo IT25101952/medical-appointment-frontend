@@ -67,8 +67,12 @@ export function LoginForm() {
                 />
               </InputGroup>
               {field.state.meta.errors && (
-                <p className="text-[11px] font-medium text-destructive mt-1">
-                  {field.state.meta.errors.join(", ")}
+                <p className="form-error">
+                  {field.state.meta.errors
+                    .map((error: any) =>
+                      typeof error === "object" ? error.message : error,
+                    )
+                    .join(", ")}
                 </p>
               )}
             </Field>
@@ -97,8 +101,12 @@ export function LoginForm() {
                 />
               </InputGroup>
               {field.state.meta.errors && (
-                <p className="text-[11px] font-medium text-destructive mt-1">
-                  {field.state.meta.errors.join(", ")}
+                <p className="form-error">
+                  {field.state.meta.errors
+                    .map((error: any) =>
+                      typeof error === "object" ? error.message : error,
+                    )
+                    .join(", ")}
                 </p>
               )}
             </Field>
