@@ -12,6 +12,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Info, ChevronLeft, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export type Column<T> = {
   header: string;
@@ -59,7 +60,7 @@ export function DataTable<T extends Record<string, any>>({
   };
 
   return (
-    <div className="space-y-4">
+    <div className={cn("space-y-4", className)}>
       <ScrollArea className="overflow-hidden rounded-2xl border border-border/60 bg-card">
         <Table className="min-w-[960px]" data-testid="data-table">
           <TableHeader>

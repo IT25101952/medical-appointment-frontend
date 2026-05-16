@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Edit3, Eye, Plus, RefreshCcw, Trash2 } from "lucide-react";
+import { Edit3, Eye, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge, Button, DataTable, type Column } from "@/components/ui";
@@ -25,14 +25,12 @@ import {
   type LabTest,
   type LabTestPayload,
 } from "@/lib/services/labtest-service";
+import { getErrorMessage } from "@/lib/utils";
+import { CrudActionButton } from "@/features/shared/components/crud-action-button";
+import { CrudPageHeader } from "@/features/shared/components/crud-page-header";
+import { DeleteConfirmDialog } from "@/features/shared/components/delete-confirm-dialog";
 
 type LabTestFilter = "all" | "active" | "inactive";
-
-function getErrorMessage(error: unknown) {
-  if (typeof error === "string") return error;
-  if (error instanceof Error) return error.message;
-  return "Something went wrong";
-}
 
 function createEmptyForm(): LabTestPayload {
   return {
@@ -88,7 +86,6 @@ export function LabTestManagement({
           : nextFilter === "inactive"
             ? await getInactiveLabTests()
             : await getAllLabTests();
-      console.log(data);
 
       setLabTests(data || []);
     } catch (error) {
@@ -257,35 +254,26 @@ export function LabTestManagement({
         header: "Actions",
         render: (labTest) => (
           <div className="flex items-center justify-center gap-2">
-            <Button
-              size="icon-sm"
-              variant="outline"
+            <CrudActionButton
+              label="View lab test"
+              icon={<Eye className="size-4" />}
               onClick={() => openDetailsDialog(labTest)}
-            >
-              <Eye className="size-4" />
-              <span className="sr-only">View lab test</span>
-            </Button>
+            />
 
             {canManage && (
               <>
-                <Button
-                  size="icon-sm"
-                  variant="outline"
+                <CrudActionButton
+                  label="Edit lab test"
+                  icon={<Edit3 className="size-4" />}
                   onClick={() => openEditDialog(labTest)}
-                >
-                  <Edit3 className="size-4" />
-                  <span className="sr-only">Edit lab test</span>
-                </Button>
+                />
 
-                <Button
-                  size="icon-sm"
-                  variant="outline"
-                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                <CrudActionButton
+                  label="Delete lab test"
+                  icon={<Trash2 className="size-4" />}
+                  destructive
                   onClick={() => openDeleteDialog(labTest)}
-                >
-                  <Trash2 className="size-4" />
-                  <span className="sr-only">Delete lab test</span>
-                </Button>
+                />
               </>
             )}
           </div>
@@ -304,30 +292,20 @@ export function LabTestManagement({
 
   return (
     <div className="space-y-6 col-start-1 col-end-14">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
-          <p className="max-w-3xl text-sm text-muted-foreground">
-            {description}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <Button
-            onClick={() => fetchLabTests(filter)}
-            size="sm"
-            variant="outline"
-          >
-            <RefreshCcw className="h-4 w-4" />
-          </Button>
-
-          {canManage && (
-            <Button onClick={openCreateDialog} size="sm">
-              <Plus className="h-4 w-4" /> New Lab Test
-            </Button>
-          )}
-        </div>
-      </div>
+      <CrudPageHeader
+        title={title}
+        description={description}
+        onRefresh={() => fetchLabTests(filter)}
+        createAction={
+          canManage
+            ? {
+                label: "New Lab Test",
+                icon: <Plus className="h-4 w-4" />,
+                onClick: openCreateDialog,
+              }
+            : undefined
+        }
+      />
 
       <div className="flex flex-wrap gap-2">
         {filterButtons.map((button) => (
@@ -564,39 +542,19 @@ export function LabTestManagement({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent className="sm:max-w-[480px]">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-semibold">
-              Delete Lab Test
-            </DialogTitle>
-          </DialogHeader>
-
-          <p className="text-sm text-muted-foreground">
-            Are you sure you want to delete this lab test? This action cannot be
-            undone.
-          </p>
-
-          <DialogFooter className="mt-4 gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setDeleteOpen(false);
-                setSelectedLabTest(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deleting}
-            >
-              {deleting ? "Deleting..." : "Delete Lab Test"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeleteConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete Lab Test"
+        message="Are you sure you want to delete this lab test? This action cannot be undone."
+        deleting={deleting}
+        onCancel={() => {
+          setDeleteOpen(false);
+          setSelectedLabTest(null);
+        }}
+        onConfirm={handleDelete}
+        confirmLabel="Delete Lab Test"
+      />
     </div>
   );
 }

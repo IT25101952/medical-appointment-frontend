@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Edit3, Eye, Plus, RefreshCcw, Trash2 } from "lucide-react";
+import { Edit3, Eye, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge, Button, DataTable, type Column } from "@/components/ui";
@@ -23,12 +23,10 @@ import {
   type Laboratory,
   type LaboratoryPayload,
 } from "@/lib/services/laboratory-service";
-
-function getErrorMessage(error: unknown) {
-  if (typeof error === "string") return error;
-  if (error instanceof Error) return error.message;
-  return "Something went wrong";
-}
+import { getErrorMessage } from "@/lib/utils";
+import { CrudActionButton } from "@/features/shared/components/crud-action-button";
+import { CrudPageHeader } from "@/features/shared/components/crud-page-header";
+import { DeleteConfirmDialog } from "@/features/shared/components/delete-confirm-dialog";
 
 function createEmptyForm(): LaboratoryPayload {
   return {
@@ -223,35 +221,26 @@ export function LaboratoryManagement({
       header: "Actions",
       render: (laboratory) => (
         <div className="flex items-center justify-center gap-2">
-          <Button
-            size="icon-sm"
-            variant="outline"
+          <CrudActionButton
+            label="View laboratory"
+            icon={<Eye className="size-4" />}
             onClick={() => openDetailsDialog(laboratory)}
-          >
-            <Eye className="size-4" />
-            <span className="sr-only">View laboratory</span>
-          </Button>
+          />
 
           {canManage && (
             <>
-              <Button
-                size="icon-sm"
-                variant="outline"
+              <CrudActionButton
+                label="Edit laboratory"
+                icon={<Edit3 className="size-4" />}
                 onClick={() => openEditDialog(laboratory)}
-              >
-                <Edit3 className="size-4" />
-                <span className="sr-only">Edit laboratory</span>
-              </Button>
+              />
 
-              <Button
-                size="icon-sm"
-                variant="outline"
-                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+              <CrudActionButton
+                label="Delete laboratory"
+                icon={<Trash2 className="size-4" />}
+                destructive
                 onClick={() => openDeleteDialog(laboratory)}
-              >
-                <Trash2 className="size-4" />
-                <span className="sr-only">Delete laboratory</span>
-              </Button>
+              />
             </>
           )}
         </div>
@@ -262,26 +251,20 @@ export function LaboratoryManagement({
 
   return (
     <div className="space-y-6 col-start-1 col-end-14">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-1">
-          <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
-          <p className="max-w-3xl text-sm text-muted-foreground">
-            {description}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <Button onClick={fetchLaboratories} size="sm" variant="outline">
-            <RefreshCcw className="h-4 w-4" />
-          </Button>
-
-          {canManage && (
-            <Button onClick={openCreateDialog} size="sm">
-              <Plus className="h-4 w-4" /> New Laboratory
-            </Button>
-          )}
-        </div>
-      </div>
+      <CrudPageHeader
+        title={title}
+        description={description}
+        onRefresh={fetchLaboratories}
+        createAction={
+          canManage
+            ? {
+                label: "New Laboratory",
+                icon: <Plus className="h-4 w-4" />,
+                onClick: openCreateDialog,
+              }
+            : undefined
+        }
+      />
 
       <div className="overflow-hidden rounded-3xl border border-border/60 bg-card/50 shadow-sm">
         {loading ? (
@@ -490,39 +473,19 @@ export function LaboratoryManagement({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent className="sm:max-w-[480px]">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-semibold">
-              Delete Laboratory
-            </DialogTitle>
-          </DialogHeader>
-
-          <p className="text-sm text-muted-foreground">
-            Are you sure you want to delete this laboratory? This action cannot
-            be undone.
-          </p>
-
-          <DialogFooter className="mt-4 gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setDeleteOpen(false);
-                setSelectedLaboratory(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deleting}
-            >
-              {deleting ? "Deleting..." : "Delete Laboratory"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeleteConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title="Delete Laboratory"
+        message="Are you sure you want to delete this laboratory? This action cannot be undone."
+        deleting={deleting}
+        onCancel={() => {
+          setDeleteOpen(false);
+          setSelectedLaboratory(null);
+        }}
+        onConfirm={handleDelete}
+        confirmLabel="Delete Laboratory"
+      />
     </div>
   );
 }
