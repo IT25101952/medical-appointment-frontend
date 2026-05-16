@@ -9,18 +9,27 @@ export async function loginAction(values: any) {
       method: "POST",
       body: JSON.stringify(values),
     });
+
     const cookieStore = await cookies();
+
+    // Store JWT
     cookieStore.set("token", data.token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       path: "/",
-      maxAge: 60 * 60 * 24,
     });
 
-    return { success: true };
+    // Store Role Type (1=Patient, 2=Doctor, 3=Staff, 4=Admin)
+    cookieStore.set("user-role", data.user.roleType.toString(), { path: "/" });
+
+    return {
+      success: true,
+      role: data.user.roleType,
+      roleName: data.user.roleName,
+      accessLevel: data.user.accessLevel,
+    };
   } catch (error: any) {
-    console.log(error);
     return { success: false, error: error.message };
   }
 }
