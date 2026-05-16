@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { UserDetailsDialog } from "@/components/admin/UserDetailsDialog";
 import { apiRequest } from "@/lib/api-client";
 import { UserTable, User } from "@/components/admin/user-table";
 import { toast } from "sonner";
@@ -64,15 +65,12 @@ export default function ManageUsersPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [newRole, setNewRole] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
+  const [viewUserId, setViewUserId] = useState<number | null>(null);
+  const [viewOpen, setViewOpen] = useState(false);
 
   useEffect(() => {
     fetchUsers();
-    const interval = setInterval(() => {
-      fetchUsers();
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, []);
+  }, [currentPage, pageSize]);
 
   async function fetchUsers() {
     setLoading(true);
@@ -94,6 +92,11 @@ export default function ManageUsersPage() {
       setLoading(false);
     }
   }
+
+  const handleViewUserDetails = (userId: number) => {
+    setViewUserId(userId);
+    setViewOpen(true);
+  };
 
   async function toggleActive(userId: number, active: boolean) {
     if (userId === SYSTEM_ADMIN_ID) {
@@ -176,7 +179,7 @@ export default function ManageUsersPage() {
         </Button>
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-border bg-card">
+      <div className="overflow-hidden w-auto rounded-lg border border-border bg-card">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentPage} // triggers animation when page changes
@@ -189,6 +192,12 @@ export default function ManageUsersPage() {
               users={users}
               onToggleActive={toggleActive}
               onEditRole={openRoleDialog}
+              onViewUserDetails={handleViewUserDetails}
+            />
+            <UserDetailsDialog
+              userId={viewUserId}
+              open={viewOpen}
+              onOpenChange={setViewOpen}
             />
           </motion.div>
         </AnimatePresence>
