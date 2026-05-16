@@ -51,7 +51,7 @@ export default function AdminPage() {
       }}
       secondaryButton={{
         text: "Appointments",
-        onClick: () => router.push("/admin/appointments/today"),
+        onClick: () => router.push("/admin/dashboard/appointments"),
       }}
       bentoItems={bentoItems}
     />
