@@ -5,6 +5,8 @@ import { apiRequest } from "@/lib/api-client";
 import { UserTable, User } from "@/components/admin/user-table";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { motion, AnimatePresence } from "framer-motion";
+import { RefreshCcw } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -65,7 +67,12 @@ export default function ManageUsersPage() {
 
   useEffect(() => {
     fetchUsers();
-  }, [currentPage, pageSize]);
+    const interval = setInterval(() => {
+      fetchUsers();
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   async function fetchUsers() {
     setLoading(true);
@@ -157,19 +164,34 @@ export default function ManageUsersPage() {
   }
 
   return (
-    <div className="col-start-1 col-end-14 p-6">
+    <div className="col-start-1 col-end-14 ">
       <h1 className="text-2xl font-medium mb-2">Manage Users</h1>
-      <p className="text-sm text-muted-foreground mb-4">
-        View users, activate or deactivate accounts, and update user roles.
-      </p>
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-sm text-muted-foreground">
+          View users, activate or deactivate accounts, and update user roles.
+        </p>
+
+        <Button onClick={fetchUsers} size="sm" variant="outline">
+          <RefreshCcw />
+        </Button>
+      </div>
 
       <div className="overflow-hidden rounded-lg border border-border bg-card">
-        <UserTable
-          users={users}
-          onToggleActive={toggleActive}
-          onEditRole={openRoleDialog}
-        />
-
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentPage} // triggers animation when page changes
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}
+          >
+            <UserTable
+              users={users}
+              onToggleActive={toggleActive}
+              onEditRole={openRoleDialog}
+            />
+          </motion.div>
+        </AnimatePresence>
         <PaginationControls
           currentPage={currentPage}
           totalPages={totalPages}
