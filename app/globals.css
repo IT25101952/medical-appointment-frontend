@@ -161,7 +161,7 @@
   }
 
   .tableHead {
-    @apply font-light tracking-wider text-base;
+    @apply font-light tracking-wider text-base text-left;
   }
 
   .table-border {
