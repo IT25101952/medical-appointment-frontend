@@ -81,6 +81,7 @@
   --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
   --sidebar-border: oklch(0.92 0.004 286.32);
   --sidebar-ring: oklch(0.702 0.183 293.541);
+  --border: oklch(0.92 0.004 286.32);
 }
 
 .dark {
@@ -115,6 +116,7 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.38 0.189 293.745);
+  --border: oklch(1 0 0 / 10%);
 }
 
 @layer base {
@@ -156,5 +158,23 @@
 
   .form-error {
     @apply text-xs font-light text-destructive mt-1;
+  }
+
+  .tableHead {
+    @apply font-light tracking-wider text-base;
+  }
+
+  .table-border {
+    @apply border border-border rounded-lg;
+  }
+
+  .table-dark-border th,
+  .table-dark-border td {
+    @apply border border-border;
+  }
+
+  /* Table head text style */
+  .table-head-text {
+    @apply font-light tracking-wider text-base;
   }
 }
