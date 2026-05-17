@@ -28,7 +28,7 @@ export const appointmentApi = {
 
   getAvailableSlots: async (doctorId: number, date: string) => {
     return apiRequest<string[]>(
-      `${BASE_URL}/available-slots?doctorId=${doctorId}&date=${date}`,
+      `${BASE_URL}/available-slots?doctorId=${encodeURIComponent(String(doctorId))}&date=${encodeURIComponent(date)}`,
       {
         method: "GET",
       },

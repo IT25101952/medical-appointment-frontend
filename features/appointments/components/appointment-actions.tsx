@@ -26,7 +26,7 @@ export function AppointmentActions({ appointment, onChanged }: Props) {
   async function handleConfirm() {
     try {
       await appointmentApi.updateStatus(appointment.appointmentId, {
-        status: "CONFIRMED",
+        status: "SCHEDULED",
       });
       toast.success("Appointment confirmed");
       onChanged?.();
@@ -68,7 +68,7 @@ export function AppointmentActions({ appointment, onChanged }: Props) {
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuItem onClick={handleConfirm}>
           <CheckCircle2 className="mr-2 h-4 w-4" />
-          Confirm
+          Schedule
         </DropdownMenuItem>
 
         <DropdownMenuItem onClick={handleComplete}>

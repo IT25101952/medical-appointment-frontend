@@ -121,7 +121,7 @@ export default function PatientDashboard() {
         open={appointmentDialogOpen}
         onOpenChange={setAppointmentDialogOpen}
       >
-        <DialogContent className="sm:max-w-2xl">
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>Schedule Appointment</DialogTitle>
             <DialogDescription>

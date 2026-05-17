@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { CalendarClock, Loader2, Send, Stethoscope } from "lucide-react";
 import { toast } from "sonner";
@@ -20,8 +20,11 @@ import { formatValidationErrors, getErrorMessage } from "@/lib/utils";
 import { appointmentApi } from "../api/appointment.api";
 import { appointmentCreateSchema } from "../schemas/appointment.schema";
 import type { AppointmentType } from "../types/appointment.types";
-import { doctorApi } from "@/features/doctors/api/doctor.api";
-import { DoctorResponse } from "@/features/doctors/api/doctor.api";
+import {
+  doctorApi,
+  getDoctorOptionLabel,
+  type DoctorResponse,
+} from "@/features/doctors/api/doctor.api";
 
 interface AppointmentFormProps {
   patientId: number;
@@ -48,20 +51,116 @@ interface AppointmentFormValues {
   notes?: string;
 }
 
+type NormalizedDoctor = DoctorResponse & {
+  doctorId: number;
+  specialization: string;
+  consultationFee: number;
+};
+
+function normalizeDoctor(doctor: DoctorResponse): NormalizedDoctor {
+  return {
+    ...doctor,
+    doctorId: Number(doctor.doctorId),
+    specialization: String(doctor.specialization ?? "").trim().toUpperCase(),
+    consultationFee: Number(doctor.consultationFee),
+  };
+}
+
+interface AvailableSlotsSectionProps {
+  doctorId: number;
+  appointmentDate: string;
+  appointmentTime: string;
+  onAppointmentTimeChange: (value: string) => void;
+}
+
+function AvailableSlotsSection({
+  doctorId,
+  appointmentDate,
+  appointmentTime,
+  onAppointmentTimeChange,
+}: AvailableSlotsSectionProps) {
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [isLoadingSlots, setIsLoadingSlots] = useState(false);
+  const onAppointmentTimeChangeRef = useRef(onAppointmentTimeChange);
+
+  useEffect(() => {
+    onAppointmentTimeChangeRef.current = onAppointmentTimeChange;
+  }, [onAppointmentTimeChange]);
+
+  useEffect(() => {
+    const loadSlots = async () => {
+      if (!doctorId || doctorId <= 0 || !appointmentDate) {
+        setAvailableSlots([]);
+        onAppointmentTimeChangeRef.current("");
+        return;
+      }
+
+      try {
+        setIsLoadingSlots(true);
+
+        const slots = await appointmentApi.getAvailableSlots(
+          doctorId,
+          appointmentDate,
+        );
+
+        setAvailableSlots(slots);
+        onAppointmentTimeChangeRef.current("");
+      } catch (error) {
+        setAvailableSlots([]);
+
+        toast.error("Could not load available slots", {
+          description: getErrorMessage(error),
+        });
+      } finally {
+        setIsLoadingSlots(false);
+      }
+    };
+
+    loadSlots();
+  }, [doctorId, appointmentDate]);
+
+  return (
+    <div className="grid gap-2">
+      <Label>Available Time Slots *</Label>
+
+      {isLoadingSlots ? (
+        <div className="flex h-10 items-center rounded-md border px-3 text-sm text-muted-foreground">
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Loading available slots...
+        </div>
+      ) : availableSlots.length > 0 ? (
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {availableSlots.map((slot) => (
+            <Button
+              key={slot}
+              type="button"
+              variant={appointmentTime === slot ? "default" : "outline"}
+              className="h-9"
+              onClick={() => onAppointmentTimeChange(slot)}
+            >
+              {slot.slice(0, 5)}
+            </Button>
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+          {doctorId > 0 && appointmentDate
+            ? "No available slots for this date."
+            : "Select doctor and date to view available slots."}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function AppointmentForm({
   patientId,
   onCreated,
   onCancel,
 }: AppointmentFormProps) {
-  const [doctors, setDoctors] = useState<DoctorResponse[]>([]);
+  const [doctors, setDoctors] = useState<NormalizedDoctor[]>([]);
   const [isLoadingDoctors, setIsLoadingDoctors] = useState(false);
-
   const [selectedSpecialization, setSelectedSpecialization] = useState("");
-  const [selectedDoctorId, setSelectedDoctorId] = useState<number>(0);
-  const [selectedDate, setSelectedDate] = useState("");
-
-  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
-  const [isLoadingSlots, setIsLoadingSlots] = useState(false);
 
   const defaultValues: AppointmentFormValues = {
     patientId,
@@ -96,11 +195,7 @@ export function AppointmentForm({
 
         form.reset();
         form.setFieldValue("patientId", patientId);
-
         setSelectedSpecialization("");
-        setSelectedDoctorId(0);
-        setSelectedDate("");
-        setAvailableSlots([]);
 
         onCreated?.();
       } catch (error) {
@@ -117,7 +212,14 @@ export function AppointmentForm({
         setIsLoadingDoctors(true);
 
         const response = await doctorApi.getOptions();
-        setDoctors(response);
+        setDoctors(
+          response
+            .map(normalizeDoctor)
+            .filter(
+              (doctor) =>
+                doctor.isActive && doctor.doctorId > 0 && doctor.specialization,
+            ),
+        );
       } catch (error) {
         toast.error("Could not load doctors", {
           description: getErrorMessage(error),
@@ -131,9 +233,7 @@ export function AppointmentForm({
   }, []);
 
   const specializations = useMemo(() => {
-    return Array.from(
-      new Set(doctors.map((doctor) => doctor.specialization).filter(Boolean)),
-    );
+    return Array.from(new Set(doctors.map((doctor) => doctor.specialization)));
   }, [doctors]);
 
   const filteredDoctors = useMemo(() => {
@@ -141,42 +241,14 @@ export function AppointmentForm({
       return [];
     }
 
+    const normalizedSpecialization = selectedSpecialization
+      .trim()
+      .toUpperCase();
+
     return doctors.filter(
-      (doctor) => doctor.specialization === selectedSpecialization,
+      (doctor) => doctor.specialization === normalizedSpecialization,
     );
   }, [doctors, selectedSpecialization]);
-
-  useEffect(() => {
-    const loadSlots = async () => {
-      if (!selectedDoctorId || selectedDoctorId <= 0 || !selectedDate) {
-        setAvailableSlots([]);
-        form.setFieldValue("appointmentTime", "");
-        return;
-      }
-
-      try {
-        setIsLoadingSlots(true);
-
-        const slots = await appointmentApi.getAvailableSlots(
-          selectedDoctorId,
-          selectedDate,
-        );
-
-        setAvailableSlots(slots);
-        form.setFieldValue("appointmentTime", "");
-      } catch (error) {
-        setAvailableSlots([]);
-
-        toast.error("Could not load available slots", {
-          description: getErrorMessage(error),
-        });
-      } finally {
-        setIsLoadingSlots(false);
-      }
-    };
-
-    loadSlots();
-  }, [selectedDoctorId, selectedDate, form]);
 
   return (
     <form
@@ -199,9 +271,6 @@ export function AppointmentForm({
             value={selectedSpecialization}
             onValueChange={(value) => {
               setSelectedSpecialization(value);
-              setSelectedDoctorId(0);
-              setAvailableSlots([]);
-
               form.setFieldValue("doctorId", 0);
               form.setFieldValue("appointmentTime", "");
             }}
@@ -239,12 +308,7 @@ export function AppointmentForm({
               <Select
                 value={field.state.value ? String(field.state.value) : ""}
                 onValueChange={(value) => {
-                  const doctorId = Number(value);
-
-                  field.handleChange(doctorId);
-                  setSelectedDoctorId(doctorId);
-                  setAvailableSlots([]);
-
+                  field.handleChange(Number(value));
                   form.setFieldValue("appointmentTime", "");
                 }}
                 disabled={
@@ -263,14 +327,8 @@ export function AppointmentForm({
 
                 <SelectContent>
                   {filteredDoctors.map((doctor) => (
-                    <SelectItem
-                      key={doctor.doctorId}
-                      value={String(doctor.doctorId)}
-                    >
-                      Dr. {doctor.firstName} {doctor.lastName}
-                      {doctor.consultationFee
-                        ? ` • Rs. ${doctor.consultationFee}`
-                        : ""}
+                    <SelectItem key={doctor.doctorId} value={String(doctor.doctorId)}>
+                      {getDoctorOptionLabel(doctor)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -304,9 +362,6 @@ export function AppointmentForm({
                 onBlur={field.handleBlur}
                 onChange={(event) => {
                   field.handleChange(event.target.value);
-                  setSelectedDate(event.target.value);
-                  setAvailableSlots([]);
-
                   form.setFieldValue("appointmentTime", "");
                 }}
               />
@@ -320,53 +375,24 @@ export function AppointmentForm({
           )}
         </form.Field>
 
-        <form.Field
-          name="appointmentTime"
-          validators={{
-            onChange: appointmentCreateSchema.shape.appointmentTime,
-          }}
+        <form.Subscribe
+          selector={(state) => [
+            state.values.doctorId,
+            state.values.appointmentDate,
+            state.values.appointmentTime,
+          ]}
         >
-          {(field) => (
-            <div className="grid gap-2">
-              <Label>Available Time Slots *</Label>
-
-              {isLoadingSlots ? (
-                <div className="flex h-10 items-center rounded-md border px-3 text-sm text-muted-foreground">
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Loading available slots...
-                </div>
-              ) : availableSlots.length > 0 ? (
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {availableSlots.map((slot) => (
-                    <Button
-                      key={slot}
-                      type="button"
-                      variant={
-                        field.state.value === slot ? "default" : "outline"
-                      }
-                      className="h-9"
-                      onClick={() => field.handleChange(slot)}
-                    >
-                      {slot.slice(0, 5)}
-                    </Button>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-                  {selectedDoctorId && selectedDate
-                    ? "No available slots for this date."
-                    : "Select doctor and date to view available slots."}
-                </div>
-              )}
-
-              {field.state.meta.errors.length > 0 && (
-                <p className="form-error">
-                  {formatValidationErrors(field.state.meta.errors)}
-                </p>
-              )}
-            </div>
+          {([doctorId, appointmentDate, appointmentTime]) => (
+            <AvailableSlotsSection
+              doctorId={Number(doctorId)}
+              appointmentDate={String(appointmentDate)}
+              appointmentTime={String(appointmentTime)}
+              onAppointmentTimeChange={(value) =>
+                form.setFieldValue("appointmentTime", value)
+              }
+            />
           )}
-        </form.Field>
+        </form.Subscribe>
       </div>
 
       <form.Field
@@ -377,10 +403,7 @@ export function AppointmentForm({
           <div className="grid gap-2">
             <Label>Appointment Type *</Label>
 
-            <Select
-              value={field.state.value}
-              onValueChange={field.handleChange}
-            >
+            <Select value={field.state.value} onValueChange={field.handleChange}>
               <SelectTrigger className="w-full">
                 <CalendarClock className="h-4 w-4 text-muted-foreground" />
                 <SelectValue placeholder="Select appointment type" />

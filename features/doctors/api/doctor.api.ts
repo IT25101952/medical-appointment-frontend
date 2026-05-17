@@ -17,6 +17,31 @@ export interface DoctorResponse {
   qualification: string;
   experienceYears: number;
   consultationFee: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export function getDoctorDisplayName(
+  doctor: Pick<DoctorResponse, "firstName" | "lastName" | "doctorId">,
+) {
+  const fullName = [doctor.firstName, doctor.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  return fullName || `Doctor ${doctor.doctorId}`;
+}
+
+export function getDoctorOptionLabel(doctor: DoctorResponse) {
+  const specialization = doctor.specialization.replaceAll("_", " ");
+  const fee = Number(doctor.consultationFee);
+  const parts = [
+    getDoctorDisplayName(doctor),
+    specialization || null,
+    Number.isFinite(fee) ? `Rs. ${fee.toLocaleString("en-LK")}` : null,
+  ].filter(Boolean);
+
+  return parts.join(" - ");
 }
 
 export const doctorApi = {
