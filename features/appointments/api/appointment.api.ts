@@ -19,6 +19,13 @@ export const appointmentApi = {
     return apiRequest<AppointmentResponse>(`${BASE_URL}/${appointmentId}`);
   },
 
+  getMyToday: async () => {
+    return apiRequest<AppointmentResponse[]>(`${BASE_URL}/my/today`, {
+      method: "GET",
+      cache: "no-store",
+    });
+  },
+
   create: async (payload: AppointmentCreateRequest) => {
     return apiRequest<AppointmentResponse>(BASE_URL, {
       method: "POST",

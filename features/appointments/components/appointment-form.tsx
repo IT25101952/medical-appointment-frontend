@@ -61,7 +61,9 @@ function normalizeDoctor(doctor: DoctorResponse): NormalizedDoctor {
   return {
     ...doctor,
     doctorId: Number(doctor.doctorId),
-    specialization: String(doctor.specialization ?? "").trim().toUpperCase(),
+    specialization: String(doctor.specialization ?? "")
+      .trim()
+      .toUpperCase(),
     consultationFee: Number(doctor.consultationFee),
   };
 }
@@ -327,7 +329,10 @@ export function AppointmentForm({
 
                 <SelectContent>
                   {filteredDoctors.map((doctor) => (
-                    <SelectItem key={doctor.doctorId} value={String(doctor.doctorId)}>
+                    <SelectItem
+                      key={doctor.doctorId}
+                      value={String(doctor.doctorId)}
+                    >
                       {getDoctorOptionLabel(doctor)}
                     </SelectItem>
                   ))}
@@ -375,57 +380,62 @@ export function AppointmentForm({
           )}
         </form.Field>
 
-        <form.Subscribe
-          selector={(state) => [
-            state.values.doctorId,
-            state.values.appointmentDate,
-            state.values.appointmentTime,
-          ]}
+        <form.Field
+          name="appointmentType"
+          validators={{
+            onChange: appointmentCreateSchema.shape.appointmentType,
+          }}
         >
-          {([doctorId, appointmentDate, appointmentTime]) => (
-            <AvailableSlotsSection
-              doctorId={Number(doctorId)}
-              appointmentDate={String(appointmentDate)}
-              appointmentTime={String(appointmentTime)}
-              onAppointmentTimeChange={(value) =>
-                form.setFieldValue("appointmentTime", value)
-              }
-            />
+          {(field) => (
+            <div className="grid gap-2">
+              <Label>Appointment Type *</Label>
+
+              <Select
+                value={field.state.value}
+                onValueChange={field.handleChange}
+              >
+                <SelectTrigger className="w-full">
+                  <CalendarClock className="h-4 w-4 text-muted-foreground" />
+                  <SelectValue placeholder="Select appointment type" />
+                </SelectTrigger>
+
+                <SelectContent>
+                  {appointmentTypes.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {field.state.meta.errors.length > 0 && (
+                <p className="form-error">
+                  {formatValidationErrors(field.state.meta.errors)}
+                </p>
+              )}
+            </div>
           )}
-        </form.Subscribe>
+        </form.Field>
       </div>
 
-      <form.Field
-        name="appointmentType"
-        validators={{ onChange: appointmentCreateSchema.shape.appointmentType }}
+      <form.Subscribe
+        selector={(state) => [
+          state.values.doctorId,
+          state.values.appointmentDate,
+          state.values.appointmentTime,
+        ]}
       >
-        {(field) => (
-          <div className="grid gap-2">
-            <Label>Appointment Type *</Label>
-
-            <Select value={field.state.value} onValueChange={field.handleChange}>
-              <SelectTrigger className="w-full">
-                <CalendarClock className="h-4 w-4 text-muted-foreground" />
-                <SelectValue placeholder="Select appointment type" />
-              </SelectTrigger>
-
-              <SelectContent>
-                {appointmentTypes.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {type.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {field.state.meta.errors.length > 0 && (
-              <p className="form-error">
-                {formatValidationErrors(field.state.meta.errors)}
-              </p>
-            )}
-          </div>
+        {([doctorId, appointmentDate, appointmentTime]) => (
+          <AvailableSlotsSection
+            doctorId={Number(doctorId)}
+            appointmentDate={String(appointmentDate)}
+            appointmentTime={String(appointmentTime)}
+            onAppointmentTimeChange={(value) =>
+              form.setFieldValue("appointmentTime", value)
+            }
+          />
         )}
-      </form.Field>
+      </form.Subscribe>
 
       <form.Field
         name="notes"

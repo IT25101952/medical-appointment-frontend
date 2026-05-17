@@ -1,6 +1,7 @@
-import { apiRequest } from "@/lib/api-client";
-import { AppointmentResponse } from "@/features/appointments/types/appointment.types";
+import { appointmentApi } from "@/features/appointments/api/appointment.api";
+import type { AppointmentResponse } from "@/features/appointments/types/appointment.types";
 import { TodayAppointmentsList } from "./today-appointments-list";
+import { getErrorMessage } from "@/lib/utils";
 
 function getTodayInSriLanka() {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -18,30 +19,44 @@ function getTodayInSriLanka() {
 }
 
 export default async function DoctorTodayAppointmentsPage() {
-  const appointments = await apiRequest("/appointment", {
-    method: "GET",
-    cache: "no-store",
-  });
-
   const today = getTodayInSriLanka();
 
-  const todayAppointments = (appointments as AppointmentResponse[])
-    .filter((appointment) => appointment.appointmentDate === today)
-    .sort((a, b) => a.appointmentTime.localeCompare(b.appointmentTime));
+  let todayAppointments: AppointmentResponse[] = [];
+  let errorMessage = "";
+
+  try {
+    const appointments = await appointmentApi.getMyToday();
+
+    todayAppointments = appointments.sort((a, b) =>
+      String(a.appointmentTime ?? "").localeCompare(
+        String(b.appointmentTime ?? ""),
+      ),
+    );
+  } catch (error) {
+    errorMessage = getErrorMessage(error, "Could not load today appointments");
+  }
 
   return (
-    <div className="space-y-6 col-start-1 col-end-14">
+    <div className="col-start-1 col-end-14 space-y-6">
       <div className="flex flex-col gap-1">
         <p className="text-sm text-muted-foreground">Doctor Portal</p>
+
         <h1 className="text-2xl font-medium tracking-tight">
           Today&apos;s Appointments
         </h1>
+
         <p className="text-sm text-muted-foreground">
           Review your consultation schedule for {today}.
         </p>
       </div>
 
-      <TodayAppointmentsList appointments={todayAppointments} />
+      {errorMessage ? (
+        <div className="rounded-2xl border bg-card p-8 text-sm text-muted-foreground shadow-sm">
+          {errorMessage}
+        </div>
+      ) : (
+        <TodayAppointmentsList appointments={todayAppointments} />
+      )}
     </div>
   );
 }
