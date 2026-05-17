@@ -5,6 +5,7 @@ import {
   FileText,
   ClipboardList,
   FilePlus,
+  Pill,
   Users,
   Bed,
   Calendar,
@@ -39,6 +40,12 @@ export default function AdminPage() {
       title: "Prescriptions",
       buttonText: "Manage Prescriptions",
       action: () => router.push("/admin/prescriptions"),
+    },
+    {
+      icon: Pill,
+      title: "Medications",
+      buttonText: "Manage Medications",
+      action: () => router.push("/admin/medications"),
     },
     {
       icon: Users,
