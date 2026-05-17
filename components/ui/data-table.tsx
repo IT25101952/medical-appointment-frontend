@@ -33,7 +33,7 @@ interface DataTableProps<T> {
   showActions?: boolean;
 }
 
-export function DataTable<T extends Record<string, any>>({
+export function DataTable<T extends Record<string, unknown>>({
   columns,
   data,
   onRowClick,
@@ -45,6 +45,10 @@ export function DataTable<T extends Record<string, any>>({
   showActions = true,
 }: DataTableProps<T>) {
   const [currentPage, setCurrentPage] = React.useState(0);
+
+  React.useEffect(() => {
+    setCurrentPage(0);
+  }, [data.length, pageSize]);
 
   const totalPages = Math.ceil(data.length / pageSize);
   const startIdx = currentPage * pageSize;
@@ -109,7 +113,11 @@ export function DataTable<T extends Record<string, any>>({
                       {col.render
                         ? col.render(row)
                         : col.accessor
-                          ? String(row[col.accessor as string])
+                          ? String(
+                              (row as Record<string, unknown>)[
+                                col.accessor as string
+                              ],
+                            )
                           : null}
                     </TableCell>
                   ))}
