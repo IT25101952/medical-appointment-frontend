@@ -1,17 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import {
   UserDetailsDialog,
   UserTable,
   PaginationControls,
+  AdminUserRegistrationDialog,
   type User,
 } from "@/features/admin";
 import { apiRequest } from "@/lib/api-client";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { motion, AnimatePresence } from "framer-motion";
-import { RefreshCcw } from "lucide-react";
+import { RefreshCcw, Plus } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -49,6 +53,10 @@ function getErrorMessage(error: unknown) {
   return "Something went wrong";
 }
 
+function normalize(value: string) {
+  return value.trim().toLowerCase();
+}
+
 interface PageableResponse {
   content: User[];
   totalPages: number;
@@ -60,16 +68,37 @@ interface PageableResponse {
 export default function ManageUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const [currentPage, setCurrentPage] = useState(0); // 0-based
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
+
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+
+  const filteredUsers = useMemo(() => {
+    const query = normalize(deferredSearchQuery);
+    if (!query) return users;
+    return users.filter((user) => {
+      const haystack = [
+        user.userId?.toString(),
+        user.firstName,
+        user.lastName,
+        user.email,
+        user.roleName,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [deferredSearchQuery, users]);
 
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [newRole, setNewRole] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
   const [viewUserId, setViewUserId] = useState<number | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
+  const [registerDialogOpen, setRegisterDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -177,10 +206,42 @@ export default function ManageUsersPage() {
           View users, activate or deactivate accounts, and update user roles.
         </p>
 
-        <Button onClick={fetchUsers} size="sm" variant="outline">
-          <RefreshCcw />
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={fetchUsers} size="sm" variant="outline">
+            <RefreshCcw className="h-4 w-4" />
+          </Button>
+          <Button
+            onClick={() => setRegisterDialogOpen(true)}
+            size="sm"
+            className="bg-primary hover:bg-primary/90"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add User
+          </Button>
+        </div>
       </div>
+
+      <Card className="border-border/60 bg-card/80 backdrop-blur">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold">
+            Search users
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px] md:items-end">
+          <div className="grid gap-2">
+            <Label htmlFor="user-search">Quick search</Label>
+            <Input
+              id="user-search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search by ID, name, email, or role"
+            />
+          </div>
+          <div className="rounded-2xl border border-border/60 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+            {filteredUsers.length} of {users.length} users shown
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="overflow-hidden w-auto rounded-lg border border-border bg-card">
         <AnimatePresence mode="wait">
@@ -192,7 +253,8 @@ export default function ManageUsersPage() {
             transition={{ duration: 0.3 }}
           >
             <UserTable
-              users={users}
+              users={filteredUsers}
+              searchQuery={deferredSearchQuery}
               onToggleActive={toggleActive}
               onEditRole={openRoleDialog}
               onViewUserDetails={handleViewUserDetails}
@@ -284,6 +346,13 @@ export default function ManageUsersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Admin User Registration Dialog */}
+      <AdminUserRegistrationDialog
+        open={registerDialogOpen}
+        onOpenChange={setRegisterDialogOpen}
+        onSuccess={fetchUsers}
+      />
     </div>
   );
 }
