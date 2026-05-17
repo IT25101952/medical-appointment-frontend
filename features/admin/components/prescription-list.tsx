@@ -1,8 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import { Calendar } from "lucide-react";
-import { Badge, DataTable, type Column } from "@/components/ui";
+import {
+  Badge,
+  DataTable,
+  type Column,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Input,
+  Label,
+} from "@/components/ui";
+import { highlightText } from "@/lib/highlight-search";
 import { PrescriptionDetailsDialog } from "./prescription-details-dialog";
 import { Prescription as FullPrescription } from "@/lib/services/prescription-service";
 
@@ -31,6 +42,10 @@ function getStatusBadgeClasses(status: string) {
   }
 }
 
+function normalize(value: string) {
+  return value.trim().toLowerCase();
+}
+
 export function PrescriptionList({
   data = [],
 }: {
@@ -38,46 +53,106 @@ export function PrescriptionList({
 }) {
   const [selectedPrescription, setSelectedPrescription] =
     useState<FullPrescription | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const columns: Column<PrescriptionListItem>[] = [
-    {
-      header: "ID",
-      accessor: "prescriptionId",
-      className: "w-[120px] px-5 py-4 font-semibold text-foreground",
-    },
-    { header: "Appointment", accessor: "appointmentId" },
-    { header: "Patient", accessor: "patientName" },
-    { header: "Practitioner", accessor: "doctorName" },
-    {
-      header: "Status",
-      render: (p: PrescriptionListItem) => (
-        <Badge
-          variant="outline"
-          className={`rounded-full px-3 py-0.5 text-[11px] font-medium ${getStatusBadgeClasses(
-            p.status,
-          )}`}
-        >
-          {p.status}
-        </Badge>
-      ),
-    },
-    {
-      header: "Created",
-      render: (p: PrescriptionListItem) => (
-        <div className="flex items-center justify-end gap-2 text-muted-foreground">
-          <Calendar className="size-3" />
-          {new Date(p.createdAt).toLocaleDateString()}
-        </div>
-      ),
-      className: "px-5 py-4 text-right",
-    },
-  ];
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+
+  const filteredPrescriptions = useMemo(() => {
+    const query = normalize(deferredSearchQuery);
+    if (!query) return data;
+    return data.filter((prescription) => {
+      const haystack = [
+        prescription.prescriptionId?.toString(),
+        prescription.appointmentId?.toString(),
+        prescription.patientName,
+        prescription.doctorName,
+        prescription.status,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [deferredSearchQuery, data]);
+
+  const columns: Column<PrescriptionListItem>[] = useMemo(
+    () => [
+      {
+        header: "ID",
+        render: (p) =>
+          highlightText(
+            p.prescriptionId?.toString() || "",
+            deferredSearchQuery,
+          ),
+        className: "w-[120px] px-5 py-4 font-semibold text-foreground",
+      },
+      {
+        header: "Appointment",
+        render: (p) =>
+          highlightText(p.appointmentId?.toString() || "", deferredSearchQuery),
+      },
+      {
+        header: "Patient",
+        render: (p) => highlightText(p.patientName || "", deferredSearchQuery),
+      },
+      {
+        header: "Practitioner",
+        render: (p) => highlightText(p.doctorName || "", deferredSearchQuery),
+      },
+      {
+        header: "Status",
+        render: (p: PrescriptionListItem) => (
+          <Badge
+            variant="outline"
+            className={`rounded-full px-3 py-0.5 text-[11px] font-medium ${getStatusBadgeClasses(
+              p.status,
+            )}`}
+          >
+            {p.status}
+          </Badge>
+        ),
+      },
+      {
+        header: "Created",
+        render: (p: PrescriptionListItem) => (
+          <div className="flex items-center justify-end gap-2 text-muted-foreground">
+            <Calendar className="size-3" />
+            {new Date(p.createdAt).toLocaleDateString()}
+          </div>
+        ),
+        className: "px-5 py-4 text-right",
+      },
+    ],
+    [deferredSearchQuery],
+  );
 
   return (
     <>
+      <Card className="border-border/60 bg-card/80 backdrop-blur mb-6">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold">
+            Search prescriptions
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px] md:items-end">
+          <div className="grid gap-2">
+            <Label htmlFor="prescription-search">Quick search</Label>
+            <Input
+              id="prescription-search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search by ID, patient, practitioner, or status"
+            />
+          </div>
+          <div className="rounded-2xl border border-border/60 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+            {filteredPrescriptions.length} of {data.length} prescriptions shown
+          </div>
+        </CardContent>
+      </Card>
+
       <DataTable
         columns={columns}
-        data={data}
+        data={filteredPrescriptions}
         onView={(p) =>
           setSelectedPrescription(p as unknown as FullPrescription)
         }
