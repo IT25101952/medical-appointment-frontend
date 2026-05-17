@@ -9,6 +9,8 @@ interface LoginValues {
   password: string;
 }
 
+type LoginAudience = "patient" | "portal";
+
 interface LoginResponse {
   token: string;
   user: {
@@ -18,12 +20,33 @@ interface LoginResponse {
   };
 }
 
-export async function loginAction(values: LoginValues) {
+function isAllowedRole(role: number | undefined, audience: LoginAudience) {
+  if (!role) return false;
+  return audience === "patient" ? role === 4 : role !== 4;
+}
+
+function getRoleErrorMessage(audience: LoginAudience) {
+  return audience === "patient"
+    ? "This login is only for patients. Staff, doctors, and admins should use the portal login."
+    : "This portal is for staff, doctors, and admins. Patients should use the patient login.";
+}
+
+export async function loginAction(
+  values: LoginValues,
+  audience: LoginAudience = "portal",
+) {
   try {
     const data = await apiRequest<LoginResponse>("/auth/login", {
       method: "POST",
       body: JSON.stringify(values),
     });
+
+    if (!isAllowedRole(data.user.roleType, audience)) {
+      return {
+        success: false,
+        error: getRoleErrorMessage(audience),
+      };
+    }
 
     const cookieStore = await cookies();
 
