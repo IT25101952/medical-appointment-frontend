@@ -23,7 +23,7 @@ export default function RegisterPage() {
           <p className="mt-6 border-t border-border/10 pt-4 text-center text-sm text-muted-foreground">
             Already have an account?{" "}
             <Link
-              href="/portal"
+              href="/patient/login"
               className="font-medium text-primary underline-offset-4 transition-colors hover:underline"
             >
               Login Here
