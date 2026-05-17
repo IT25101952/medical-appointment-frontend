@@ -9,6 +9,7 @@ import {
   FilePlus,
   Activity,
   Clock,
+  FlaskConical,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -52,6 +53,12 @@ export default function DoctorDashboard() {
       title: "Lab Reports",
       buttonText: "View Results",
       action: () => router.push("/doctor/lab-results"),
+    },
+    {
+      icon: FlaskConical,
+      title: "Lab Orders",
+      buttonText: "Create Orders",
+      action: () => router.push("/doctor/lab-orders"),
     },
     {
       icon: Clock,
