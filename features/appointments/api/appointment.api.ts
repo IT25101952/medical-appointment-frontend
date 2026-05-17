@@ -1,4 +1,5 @@
 // src/features/appointments/api/appointment.api.ts
+
 import { apiRequest } from "@/lib/api-client";
 import {
   AppointmentCreateRequest,
@@ -7,52 +8,56 @@ import {
   AppointmentResponse,
 } from "../types/appointment.types";
 
-const BASE_URL = "/appointment"; // will append to INTERNAL_BACKEND_URL in api-client
+const BASE_URL = "/appointment";
 
 export const appointmentApi = {
   getAll: async () => {
-    const data = await apiRequest<AppointmentResponse[]>(BASE_URL);
-    return data;
+    return apiRequest<AppointmentResponse[]>(BASE_URL);
   },
 
   getById: async (appointmentId: number) => {
-    const data = await apiRequest<AppointmentResponse>(
-      `${BASE_URL}/${appointmentId}`,
-    );
-    return data;
+    return apiRequest<AppointmentResponse>(`${BASE_URL}/${appointmentId}`);
   },
 
-  create: async (data: AppointmentCreateRequest) => {
-    const res = await apiRequest(BASE_URL, {
+  create: async (payload: AppointmentCreateRequest) => {
+    return apiRequest<AppointmentResponse>(BASE_URL, {
       method: "POST",
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
-    return res;
+  },
+
+  getAvailableSlots: async (doctorId: number, date: string) => {
+    return apiRequest<string[]>(
+      `${BASE_URL}/available-slots?doctorId=${doctorId}&date=${date}`,
+      {
+        method: "GET",
+      },
+    );
   },
 
   update: async (appointmentId: number, data: AppointmentUpdateRequest) => {
-    const res = await apiRequest(`${BASE_URL}/${appointmentId}`, {
+    return apiRequest<AppointmentResponse>(`${BASE_URL}/${appointmentId}`, {
       method: "PUT",
       body: JSON.stringify(data),
     });
-    return res;
   },
 
   updateStatus: async (
     appointmentId: number,
     data: AppointmentStatusUpdateRequest,
   ) => {
-    const res = await apiRequest(`${BASE_URL}/${appointmentId}/status`, {
-      method: "PATCH",
-      body: JSON.stringify(data),
-    });
-    return res;
+    return apiRequest<AppointmentResponse>(
+      `${BASE_URL}/${appointmentId}/status`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      },
+    );
   },
 
   cancel: async (appointmentId: number) => {
-    const res = await apiRequest(`${BASE_URL}/${appointmentId}`, {
+    return apiRequest<void>(`${BASE_URL}/${appointmentId}`, {
       method: "DELETE",
     });
-    return res;
   },
 };
