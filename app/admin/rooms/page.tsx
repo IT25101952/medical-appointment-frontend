@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { highlightText } from "@/lib/highlight-search";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
@@ -36,6 +38,10 @@ function getErrorMessage(error: unknown) {
   return "Something went wrong";
 }
 
+function normalize(value: string) {
+  return value.trim().toLowerCase();
+}
+
 export default function AdminRoomsPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -44,6 +50,7 @@ export default function AdminRoomsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [formValues, setFormValues] = useState<RoomPayload>({
     roomNumber: "",
     roomType: "",
@@ -51,6 +58,26 @@ export default function AdminRoomsPage() {
     equipmentAvailable: "",
     status: "AVAILABLE",
   });
+
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+
+  const filteredRooms = useMemo(() => {
+    const query = normalize(deferredSearchQuery);
+    if (!query) return rooms;
+    return rooms.filter((room) => {
+      const haystack = [
+        room.roomNumber,
+        room.roomType,
+        room.capacity?.toString(),
+        room.equipmentAvailable,
+        room.status,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [deferredSearchQuery, rooms]);
 
   useEffect(() => {
     fetchRooms();
@@ -163,6 +190,28 @@ export default function AdminRoomsPage() {
         </div>
       </div>
 
+      <Card className="border-border/60 bg-card/80 backdrop-blur mb-6">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold">
+            Search rooms
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-[minmax(0,1fr)_180px] md:items-end">
+          <div className="grid gap-2">
+            <Label htmlFor="room-search">Quick search</Label>
+            <Input
+              id="room-search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search by room number, type, equipment, or status"
+            />
+          </div>
+          <div className="rounded-2xl border border-border/60 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+            {filteredRooms.length} of {rooms.length} rooms shown
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="overflow-hidden rounded-lg border border-border bg-card">
         <ScrollArea className="bg-card rounded-lg border-b border-border overflow-x-auto">
           <table className="min-w-[950px] w-full text-sm">
@@ -211,7 +260,7 @@ export default function AdminRoomsPage() {
                   </td>
                 </tr>
               ) : (
-                rooms.map((room) => (
+                filteredRooms.map((room) => (
                   <tr
                     key={room.roomId}
                     className="border-t border-border hover:bg-muted/20"
@@ -220,16 +269,25 @@ export default function AdminRoomsPage() {
                       {room.roomId}
                     </td>
                     <td className="px-4 py-4 text-sm">
-                      {(room.roomNumber as string) || "—"}
+                      {highlightText(
+                        (room.roomNumber as string) || "—",
+                        deferredSearchQuery,
+                      )}
                     </td>
                     <td className="px-4 py-4 text-sm text-muted-foreground">
-                      {(room.roomType as string) || "—"}
+                      {highlightText(
+                        (room.roomType as string) || "—",
+                        deferredSearchQuery,
+                      )}
                     </td>
                     <td className="px-4 py-4 text-sm">
                       {(room.capacity as number) || "—"}
                     </td>
                     <td className="px-4 py-4 text-sm text-muted-foreground">
-                      {(room.equipmentAvailable as string) || "—"}
+                      {highlightText(
+                        (room.equipmentAvailable as string) || "—",
+                        deferredSearchQuery,
+                      )}
                     </td>
                     <td className="px-4 py-4 text-sm text-muted-foreground">
                       {(room.status as string) || "AVAILABLE"}
