@@ -1,6 +1,15 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { DashboardShell } from "@/features/dashboard";
+import { AppointmentForm } from "@/features/appointments/components/appointment-form";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   CalendarPlus,
   FileText,
@@ -10,15 +19,49 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { apiRequest } from "@/lib/api-client";
+import { getErrorMessage } from "@/lib/utils";
+
+interface CurrentUser {
+  userId: number;
+  firstName?: string;
+  lastName?: string;
+  roleType: number;
+}
 
 export default function PatientDashboard() {
   const router = useRouter();
+  const [appointmentDialogOpen, setAppointmentDialogOpen] = useState(false);
+  const [patient, setPatient] = useState<CurrentUser | null>(null);
+  const [isPatientLoading, setIsPatientLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadPatient() {
+      try {
+        const currentUser = await apiRequest<CurrentUser>("/users/me", {
+          method: "GET",
+          cache: "no-store",
+        });
+        setPatient(currentUser);
+      } catch (error) {
+        toast.error(getErrorMessage(error, "Could not load patient profile"));
+      } finally {
+        setIsPatientLoading(false);
+      }
+    }
+
+    loadPatient();
+  }, []);
+
+  const openAppointmentForm = () => setAppointmentDialogOpen(true);
+
   const patientItems = [
     {
       icon: CalendarPlus,
       title: "Appointment",
       buttonText: "Schedule Now",
-      action: () => router.push("/patient/book"),
+      action: openAppointmentForm,
     },
     {
       icon: FileText,
@@ -53,24 +96,56 @@ export default function PatientDashboard() {
   ];
 
   return (
-    <DashboardShell
-      badgeText="Patient Care Portal"
-      title={
-        <>
-          Your Health Center <br />
-          <span>Manage Appointments & Records</span>
-        </>
-      }
-      description="Stay on top of your health. Book new appointments, pay your medical bills, and access your lab results securely."
-      primaryButton={{
-        text: "Book Appointment",
-        onClick: () => router.push("/patient/book"),
-      }}
-      secondaryButton={{
-        text: "View My Visits",
-        onClick: () => router.push("/patient/feedback"),
-      }}
-      bentoItems={patientItems}
-    />
+    <>
+      <DashboardShell
+        badgeText="Patient Care Portal"
+        title={
+          <>
+            Your Health Center <br />
+            <span>Manage Appointments & Records</span>
+          </>
+        }
+        description="Stay on top of your health. Book new appointments, pay your medical bills, and access your lab results securely."
+        primaryButton={{
+          text: "Book Appointment",
+          onClick: openAppointmentForm,
+        }}
+        secondaryButton={{
+          text: "View My Visits",
+          onClick: () => router.push("/patient/feedback"),
+        }}
+        bentoItems={patientItems}
+      />
+
+      <Dialog
+        open={appointmentDialogOpen}
+        onOpenChange={setAppointmentDialogOpen}
+      >
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Schedule Appointment</DialogTitle>
+            <DialogDescription>
+              Choose your doctor, appointment time, and visit type.
+            </DialogDescription>
+          </DialogHeader>
+
+          {isPatientLoading ? (
+            <p className="text-sm text-muted-foreground">
+              Loading your patient profile...
+            </p>
+          ) : patient?.userId ? (
+            <AppointmentForm
+              patientId={patient.userId}
+              onCancel={() => setAppointmentDialogOpen(false)}
+              onCreated={() => setAppointmentDialogOpen(false)}
+            />
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              We could not load your patient profile. Please sign in again.
+            </p>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

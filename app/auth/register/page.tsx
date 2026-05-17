@@ -20,7 +20,7 @@ export default function RegisterPage() {
 
           <RegisterForm />
 
-          <p className="mt-6 border-t border-border/10 pt-4 text-center text-sm text-muted-foreground">
+          <p className="mt-6 border-t border-border/10 text-center text-sm text-muted-foreground">
             Already have an account?{" "}
             <Link
               href="/patient/login"

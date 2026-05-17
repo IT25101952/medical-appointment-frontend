@@ -49,8 +49,6 @@ export async function loginAction(
     }
 
     const cookieStore = await cookies();
-
-    // Store JWT
     cookieStore.set("token", data.token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -58,7 +56,6 @@ export async function loginAction(
       path: "/",
     });
 
-    // Store Role Type (1=Patient, 2=Doctor, 3=Staff, 4=Admin)
     cookieStore.set("user-role", data.user.roleType.toString(), { path: "/" });
 
     return {

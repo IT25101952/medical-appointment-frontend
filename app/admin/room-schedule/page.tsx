@@ -110,57 +110,70 @@ export default function AdminRoomSchedulePage() {
     () => [
       {
         header: "Schedule ID",
-        render: (schedule: RoomScheduleResponse) =>
-          highlightText(
+        render: (row: any) => {
+          const schedule = row as RoomScheduleResponse;
+          return highlightText(
             schedule.roomScheduleId?.toString() || "",
             deferredSearchQuery,
-          ),
+          );
+        },
       },
       {
         header: "Room",
-        render: (schedule: RoomScheduleResponse) =>
-          highlightText(`Room ${schedule.roomNumber}`, deferredSearchQuery),
+        render: (row: any) => {
+          const schedule = row as RoomScheduleResponse;
+          return highlightText(`Room ${schedule.roomNumber}`, deferredSearchQuery);
+        },
       },
       {
         header: "Doctor",
-        render: (schedule: RoomScheduleResponse) =>
-          highlightText(schedule.doctorName || "", deferredSearchQuery),
+        render: (row: any) => {
+          const schedule = row as RoomScheduleResponse;
+          return highlightText(schedule.doctorName || "", deferredSearchQuery);
+        },
       },
       {
         header: "Day",
-        render: (schedule: RoomScheduleResponse) =>
-          highlightText(schedule.dayOfWeek || "", deferredSearchQuery),
+        render: (row: any) => {
+          const schedule = row as RoomScheduleResponse;
+          return highlightText(schedule.dayOfWeek || "", deferredSearchQuery);
+        },
       },
       {
         header: "Time Slot",
-        render: (schedule: RoomScheduleResponse) =>
-          highlightText(
+        render: (row: any) => {
+          const schedule = row as RoomScheduleResponse;
+          return highlightText(
             `${schedule.startTime} - ${schedule.endTime}`,
             deferredSearchQuery,
-          ),
+          );
+        },
       },
       {
         header: "Actions",
-        render: (schedule: RoomScheduleResponse) => (
-          <div className="flex flex-wrap justify-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => openEditDialog(schedule)}
-            >
-              <Edit3 className="mr-2 h-4 w-4" /> Edit
-            </Button>
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={() => openDeleteDialog(schedule)}
-            >
-              <Trash2 className="mr-2 h-4 w-4" /> Delete
-            </Button>
-          </div>
-        ),
+        render: (row: any) => {
+          const schedule = row as RoomScheduleResponse;
+          return (
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => openEditDialog(schedule)}
+              >
+                <Edit3 className="mr-2 h-4 w-4" /> Edit
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => openDeleteDialog(schedule)}
+              >
+                <Trash2 className="mr-2 h-4 w-4" /> Delete
+              </Button>
+            </div>
+          );
+        },
       },
-    ],
+    ] as const,
     [deferredSearchQuery, openEditDialog, openDeleteDialog],
   );
 

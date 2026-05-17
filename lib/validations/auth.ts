@@ -11,7 +11,15 @@ export const patientRegisterFormSchema = z.object({
   firstName: z.string().min(1, "First name is required."),
   lastName: z.string().min(1, "Last name is required."),
   phone: z.string().min(1, "Phone is required."),
-  nic: z.string().min(1, "NIC is required."),
+  nic: z
+    .string()
+    .min(1, "NIC is required.")
+    .regex(/^([0-9]{9}[Vv]|[0-9]{12})$/, "Invalid NIC format"),
+  dateOfBirth: z.string().refine((s) => !!s && !Number.isNaN(Date.parse(s)), {
+    message: "Date of birth is required and must be a valid date",
+  }),
+  gender: z.enum(["MALE", "FEMALE", "OTHER"]),
+  address: z.string().min(1, "Address is required."),
 });
 
 export const commonUserSchema = z.object({
@@ -128,4 +136,6 @@ export const staffRegistrationSchema = userRegistrationSchema.extend({
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;
-export type PatientRegisterFormInput = z.infer<typeof patientRegisterFormSchema>;
+export type PatientRegisterFormInput = z.infer<
+  typeof patientRegisterFormSchema
+>;

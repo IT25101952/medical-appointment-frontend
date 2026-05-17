@@ -3,22 +3,43 @@
 import { apiRequest } from "@/lib/api-client";
 import { getErrorMessage } from "@/lib/utils";
 
-interface RegisterValues {
-  role: string;
-  [key: string]: unknown;
+interface VerifyValues {
+  email: string;
+  code: string;
 }
 
-export async function registerAction(values: RegisterValues) {
-  try {
-    const endpoint = `/auth/register/${values.role.toLowerCase()}`;
+interface ResendValues {
+  email: string;
+}
 
-    await apiRequest(endpoint, {
+export async function verifyAccountAction(values: VerifyValues) {
+  try {
+    await apiRequest("/auth/verify", {
       method: "POST",
       body: JSON.stringify(values),
     });
 
     return { success: true };
   } catch (error: unknown) {
-    return { success: false, error: getErrorMessage(error) };
+    return {
+      success: false,
+      error: getErrorMessage(error),
+    };
+  }
+}
+
+export async function resendVerificationAction(values: ResendValues) {
+  try {
+    await apiRequest("/auth/resend-verification", {
+      method: "POST",
+      body: JSON.stringify(values),
+    });
+
+    return { success: true };
+  } catch (error: unknown) {
+    return {
+      success: false,
+      error: getErrorMessage(error),
+    };
   }
 }

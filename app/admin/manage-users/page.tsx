@@ -66,6 +66,11 @@ interface PageableResponse {
 }
 
 export default function ManageUsersPage() {
+  const [currentUser, setCurrentUser] = useState<{
+    userId: number;
+    roleType: number;
+    accessLevel?: string;
+  } | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -103,6 +108,26 @@ export default function ManageUsersPage() {
   useEffect(() => {
     fetchUsers();
   }, [currentPage, pageSize]);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadCurrent() {
+      try {
+        const data = await apiRequest<{
+          userId: number;
+          roleType: number;
+          accessLevel?: string;
+        }>("/users/me", { method: "GET", cache: "no-store" });
+        if (mounted) setCurrentUser(data);
+      } catch (error) {
+        // ignore — page will show restricted controls if no user
+      }
+    }
+    loadCurrent();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   async function fetchUsers() {
     setLoading(true);
@@ -214,6 +239,12 @@ export default function ManageUsersPage() {
             onClick={() => setRegisterDialogOpen(true)}
             size="sm"
             className="bg-primary hover:bg-primary/90"
+            disabled={currentUser?.roleType !== 1}
+            title={
+              currentUser?.roleType !== 1
+                ? "Only administrators can add users"
+                : undefined
+            }
           >
             <Plus className="mr-2 h-4 w-4" />
             Add User
@@ -352,6 +383,7 @@ export default function ManageUsersPage() {
         open={registerDialogOpen}
         onOpenChange={setRegisterDialogOpen}
         onSuccess={fetchUsers}
+        currentUser={currentUser}
       />
     </div>
   );

@@ -167,7 +167,7 @@ const NavigationContainer = () => {
               variant="outline"
               className="hidden sm:inline-flex font-medium"
             >
-              Patient Login
+              Login
             </Button>
           </Link>
           <ThemeToggle />
@@ -234,7 +234,9 @@ const NavigationContainer = () => {
                   Contact
                 </Link>
               </nav>
-              <Button className="">Book Appointment</Button>
+              <a href="/patient/login">
+                <Button className="">Book Appointment</Button>
+              </a>
             </div>
           </SheetContent>
         </Sheet>

@@ -73,7 +73,7 @@ export function LoginForm({ audience = "portal" }: LoginFormProps) {
                 </InputGroupAddon>
                 <InputGroupInput
                   id={field.name}
-                  placeholder="doctor@healthflow.com"
+                  placeholder="johndoe@gmail.com"
                   value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
@@ -129,16 +129,13 @@ export function LoginForm({ audience = "portal" }: LoginFormProps) {
         ]}
       >
         {([email, password, canSubmit, isSubmitting]) => {
-          if (!String(email).trim() || !String(password).trim()) {
-            return null;
-          }
+          const isEmailEmpty = !String(email).trim();
+          const isPasswordEmpty = !String(password).trim();
+          const isDisabled =
+            isEmailEmpty || isPasswordEmpty || !canSubmit || isSubmitting;
 
           return (
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={!Boolean(canSubmit) || Boolean(isSubmitting)}
-            >
+            <Button type="submit" className="w-full" disabled={isDisabled}>
               {isSubmitting ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (

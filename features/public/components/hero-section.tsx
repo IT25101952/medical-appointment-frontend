@@ -24,9 +24,11 @@ export default function Hero() {
         </p>
 
         <div className="flex flex-col sm:flex-row gap-4 mt-8">
-          <Button className="">
-            Book Appointment <Calendar className="ml-2 size-5" />
-          </Button>
+          <a href="/patient/login">
+            <Button className="">
+              Book Appointment <Calendar className="ml-2 size-5" />
+            </Button>
+          </a>
           <Button variant="outline" className="">
             View Services
           </Button>

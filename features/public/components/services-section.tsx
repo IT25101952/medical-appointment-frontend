@@ -14,7 +14,7 @@ import Image from "next/image";
 const services = [
   {
     title: "Appointments",
-    href: "/appointments",
+    href: "/patient/login",
     desc: "Book a specialist doctor for in-person visits with minimal waiting time.",
     icon: Calendar,
     className: "lg:col-span-6 lg:row-span-2 bg-background border border-border",

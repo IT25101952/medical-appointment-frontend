@@ -32,6 +32,11 @@ interface AdminUserRegistrationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  currentUser?: {
+    userId: number;
+    roleType: number;
+    accessLevel?: string;
+  } | null;
 }
 
 const ROLE_OPTIONS = [
@@ -54,6 +59,7 @@ export function AdminUserRegistrationDialog({
   open,
   onOpenChange,
   onSuccess,
+  currentUser,
 }: AdminUserRegistrationDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -70,6 +76,18 @@ export function AdminUserRegistrationDialog({
     onSubmit: async ({ value }) => {
       setIsLoading(true);
       try {
+        // Prevent creating ADMIN if current user does not have full access
+        const creatingAdmin = Number(value.roleType) === 1;
+        const hasFullAccess =
+          currentUser?.accessLevel === "full" ||
+          currentUser?.accessLevel === "FULL" ||
+          currentUser?.accessLevel === "1";
+
+        if (creatingAdmin && !hasFullAccess) {
+          toast.error("You are not authorized to create ADMIN users.");
+          setIsLoading(false);
+          return;
+        }
         await apiRequest("/users", {
           method: "POST",
           body: JSON.stringify({
@@ -99,6 +117,20 @@ export function AdminUserRegistrationDialog({
     },
   });
 
+  const allowedRoleOptions = ROLE_OPTIONS.filter((role) => {
+    if (role.value === 1) {
+      // ADMIN creation requires current user full access
+      return (
+        currentUser?.roleType === 1 &&
+        (currentUser?.accessLevel === "full" ||
+          currentUser?.accessLevel === "FULL" ||
+          currentUser?.accessLevel === "1")
+      );
+    }
+    // STAFF and DOCTOR creation allowed for admins
+    return currentUser?.roleType === 1;
+  });
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
@@ -126,7 +158,7 @@ export function AdminUserRegistrationDialog({
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
-                    {ROLE_OPTIONS.map((role) => (
+                    {allowedRoleOptions.map((role) => (
                       <SelectItem
                         key={role.value}
                         value={role.value.toString()}
