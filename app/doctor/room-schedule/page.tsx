@@ -9,15 +9,11 @@ import {
   type RoomScheduleResponse,
 } from "@/features/room-schedule";
 import { apiRequest } from "@/lib/api-client";
+import { getErrorMessage } from "@/lib/utils";
 
 interface DoctorInfo {
-  doctorId: number;
-}
-
-function getErrorMessage(error: unknown) {
-  if (typeof error === "string") return error;
-  if (error instanceof Error) return error.message;
-  return "Something went wrong";
+  userId: number;
+  roleType: number;
 }
 
 export default function DoctorRoomSchedulePage() {
@@ -30,30 +26,31 @@ export default function DoctorRoomSchedulePage() {
   }, []);
 
   useEffect(() => {
-    if (doctorInfo?.doctorId) {
+    if (doctorInfo?.userId) {
       fetchSchedules();
     }
   }, [doctorInfo]);
 
   async function fetchDoctorInfo() {
     try {
-      // Fetch current doctor's info
-      const doctor = await apiRequest<DoctorInfo>("/doctors/me", {
+      const doctor = await apiRequest<DoctorInfo>("/users/me", {
         method: "GET",
         cache: "no-store",
       });
+
       setDoctorInfo(doctor);
     } catch (error) {
       toast.error(getErrorMessage(error));
+      setIsLoading(false);
     }
   }
 
   async function fetchSchedules() {
-    if (!doctorInfo?.doctorId) return;
+    if (!doctorInfo?.userId) return;
     setIsLoading(true);
     try {
       const data = await roomScheduleApi.getAllDoctorSchedules(
-        doctorInfo.doctorId,
+        doctorInfo.userId,
       );
       setSchedules(data || []);
     } catch (error) {
@@ -100,6 +97,7 @@ export default function DoctorRoomSchedulePage() {
         data={schedules}
         pageable={true}
         pageSize={10}
+        showActions={false}
         emptyMessage="No schedules assigned yet."
       />
     </div>
