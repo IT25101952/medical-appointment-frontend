@@ -1,13 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { Edit3, Eye, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Badge, Button, DataTable, type Column } from "@/components/ui";
+import {
+  Badge,
+  Button,
+  DataTable,
+  type Column,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { highlightText } from "@/lib/highlight-search";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +48,10 @@ function createEmptyForm(): LaboratoryPayload {
   };
 }
 
+function normalize(value: string) {
+  return value.trim().toLowerCase();
+}
+
 interface LaboratoryManagementProps {
   title: string;
   description: string;
@@ -53,6 +67,7 @@ export function LaboratoryManagement({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -60,6 +75,27 @@ export function LaboratoryManagement({
     useState<Laboratory | null>(null);
   const [formValues, setFormValues] =
     useState<LaboratoryPayload>(createEmptyForm());
+
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+
+  const filteredLaboratories = useMemo(() => {
+    const query = normalize(deferredSearchQuery);
+    if (!query) return laboratories;
+    return laboratories.filter((laboratory) => {
+      const haystack = [
+        laboratory.laboratoryId?.toString(),
+        laboratory.name,
+        laboratory.address,
+        laboratory.openingHours,
+        laboratory.phone,
+        laboratory.email,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [deferredSearchQuery, laboratories]);
 
   useEffect(() => {
     fetchLaboratories();
@@ -169,85 +205,96 @@ export function LaboratoryManagement({
     }
   }
 
-  const columns: Column<Laboratory>[] = [
-    {
-      header: "ID",
-      accessor: "laboratoryId",
-      className: "w-[100px] px-5 py-4 font-semibold text-foreground",
-    },
-    {
-      header: "Name",
-      accessor: "name",
-      className: "w-[220px] px-5 py-4 font-medium text-foreground",
-    },
-    {
-      header: "Address",
-      render: (laboratory) => (
-        <div className="max-w-[320px] whitespace-normal text-sm text-muted-foreground">
-          {laboratory.address}
-        </div>
-      ),
-      className: "px-5 py-4 align-top",
-    },
-    {
-      header: "Opening Hours",
-      accessor: "openingHours",
-      className: "w-[200px] px-5 py-4 text-muted-foreground",
-    },
-    {
-      header: "Phone",
-      accessor: "phone",
-      className: "w-[180px] px-5 py-4 text-muted-foreground",
-    },
-    {
-      header: "Email",
-      accessor: "email",
-      className: "w-[240px] px-5 py-4 text-muted-foreground",
-    },
-    {
-      header: "Updated",
-      render: (laboratory) => (
-        <span className="text-sm text-muted-foreground">
-          {laboratory.updatedAt
-            ? new Date(laboratory.updatedAt).toLocaleDateString()
-            : laboratory.createdAt
-              ? new Date(laboratory.createdAt).toLocaleDateString()
-              : "—"}
-        </span>
-      ),
-      className: "w-[140px] px-5 py-4",
-    },
-    {
-      header: "Actions",
-      render: (laboratory) => (
-        <div className="flex items-center justify-center gap-2">
-          <CrudActionButton
-            label="View laboratory"
-            icon={<Eye className="size-4" />}
-            onClick={() => openDetailsDialog(laboratory)}
-          />
+  const columns: Column<Laboratory>[] = useMemo(
+    () => [
+      {
+        header: "ID",
+        render: (laboratory) =>
+          highlightText(
+            laboratory.laboratoryId?.toString() || "",
+            deferredSearchQuery,
+          ),
+        className: "w-[100px] px-5 py-4 font-semibold text-foreground",
+      },
+      {
+        header: "Name",
+        render: (laboratory) =>
+          highlightText(laboratory.name || "", deferredSearchQuery),
+        className: "w-[220px] px-5 py-4 font-medium text-foreground",
+      },
+      {
+        header: "Address",
+        render: (laboratory) => (
+          <div className="max-w-[320px] whitespace-normal text-sm text-muted-foreground">
+            {highlightText(laboratory.address || "", deferredSearchQuery)}
+          </div>
+        ),
+        className: "px-5 py-4 align-top",
+      },
+      {
+        header: "Opening Hours",
+        render: (laboratory) =>
+          highlightText(laboratory.openingHours || "", deferredSearchQuery),
+        className: "w-[200px] px-5 py-4 text-muted-foreground",
+      },
+      {
+        header: "Phone",
+        render: (laboratory) =>
+          highlightText(laboratory.phone || "", deferredSearchQuery),
+        className: "w-[180px] px-5 py-4 text-muted-foreground",
+      },
+      {
+        header: "Email",
+        render: (laboratory) =>
+          highlightText(laboratory.email || "", deferredSearchQuery),
+        className: "w-[240px] px-5 py-4 text-muted-foreground",
+      },
+      {
+        header: "Updated",
+        render: (laboratory) => (
+          <span className="text-sm text-muted-foreground">
+            {laboratory.updatedAt
+              ? new Date(laboratory.updatedAt).toLocaleDateString()
+              : laboratory.createdAt
+                ? new Date(laboratory.createdAt).toLocaleDateString()
+                : "—"}
+          </span>
+        ),
+        className: "w-[140px] px-5 py-4",
+      },
+      {
+        header: "Actions",
+        render: (laboratory) => (
+          <div className="flex items-center justify-center gap-2">
+            <CrudActionButton
+              label="View laboratory"
+              icon={<Eye className="size-4" />}
+              onClick={() => openDetailsDialog(laboratory)}
+            />
 
-          {canManage && (
-            <>
-              <CrudActionButton
-                label="Edit laboratory"
-                icon={<Edit3 className="size-4" />}
-                onClick={() => openEditDialog(laboratory)}
-              />
+            {canManage && (
+              <>
+                <CrudActionButton
+                  label="Edit laboratory"
+                  icon={<Edit3 className="size-4" />}
+                  onClick={() => openEditDialog(laboratory)}
+                />
 
-              <CrudActionButton
-                label="Delete laboratory"
-                icon={<Trash2 className="size-4" />}
-                destructive
-                onClick={() => openDeleteDialog(laboratory)}
-              />
-            </>
-          )}
-        </div>
-      ),
-      className: "w-[180px] px-5 py-4 text-center",
-    },
-  ];
+                <CrudActionButton
+                  label="Delete laboratory"
+                  icon={<Trash2 className="size-4" />}
+                  destructive
+                  onClick={() => openDeleteDialog(laboratory)}
+                />
+              </>
+            )}
+          </div>
+        ),
+        className: "w-[180px] px-5 py-4 text-center",
+      },
+    ],
+    [canManage, deferredSearchQuery],
+  );
 
   return (
     <div className="space-y-6 col-start-1 col-end-14">
@@ -266,6 +313,29 @@ export function LaboratoryManagement({
         }
       />
 
+      <Card className="border-border/60 bg-card/80 backdrop-blur">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold">
+            Search laboratories
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px] md:items-end">
+          <div className="grid gap-2">
+            <Label htmlFor="laboratory-search">Quick search</Label>
+            <Input
+              id="laboratory-search"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Search by name, address, phone, or email"
+            />
+          </div>
+          <div className="rounded-2xl border border-border/60 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+            {filteredLaboratories.length} of {laboratories.length} laboratories
+            shown
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="overflow-hidden rounded-3xl border border-border/60 bg-card/50 shadow-sm">
         {loading ? (
           <div className="px-6 py-10 text-center text-sm text-muted-foreground">
@@ -278,7 +348,7 @@ export function LaboratoryManagement({
         ) : (
           <DataTable
             columns={columns}
-            data={laboratories}
+            data={filteredLaboratories}
             pageable={true}
             pageSize={10}
             showActions={false}
