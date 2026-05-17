@@ -15,35 +15,12 @@ import {
 } from "@/components/ui/input-group";
 import { registerAction } from "@/lib/actions/register-action";
 import { formatValidationErrors } from "@/lib/utils";
-
-interface RegisterFormValues {
-  email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-  phone: string;
-  nic: string;
-}
-
-function validateEmail(email: string): string | undefined {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!email) return "Email is required";
-  if (!re.test(email)) return "Please enter a valid email address";
-  return undefined;
-}
-
-function validateRequired(
-  value: string,
-  fieldName: string,
-): string | undefined {
-  if (!value || value.trim().length === 0) return `${fieldName} is required`;
-  return undefined;
-}
+import { patientRegisterFormSchema } from "@/lib/validations/auth";
 
 export function RegisterForm() {
   const router = useRouter();
 
-  const form = useForm<RegisterFormValues>({
+  const form = useForm({
     defaultValues: {
       email: "",
       password: "",
@@ -51,6 +28,9 @@ export function RegisterForm() {
       lastName: "",
       phone: "",
       nic: "",
+    },
+    validators: {
+      onSubmit: patientRegisterFormSchema,
     },
     onSubmit: async ({ value }) => {
       try {
@@ -64,7 +44,7 @@ export function RegisterForm() {
             description: "Redirecting to login...",
           });
           setTimeout(() => {
-            router.push("/portal");
+            router.push("/patient/login");
           }, 1000);
         } else {
           toast.error("Registration failed", {
@@ -91,7 +71,10 @@ export function RegisterForm() {
       <div className="space-y-3">
         {/* Name Row */}
         <div className="grid grid-cols-2 gap-3">
-          <form.Field name="firstName">
+          <form.Field
+            name="firstName"
+            validators={{ onChange: patientRegisterFormSchema.shape.firstName }}
+          >
             {(field) => (
               <Field>
                 <FieldLabel htmlFor={field.name} className="text-xs">
@@ -119,7 +102,10 @@ export function RegisterForm() {
             )}
           </form.Field>
 
-          <form.Field name="lastName">
+          <form.Field
+            name="lastName"
+            validators={{ onChange: patientRegisterFormSchema.shape.lastName }}
+          >
             {(field) => (
               <Field>
                 <FieldLabel htmlFor={field.name} className="text-xs">
@@ -151,9 +137,7 @@ export function RegisterForm() {
         {/* Email */}
         <form.Field
           name="email"
-          validators={{
-            onChange: (value) => validateEmail(value),
-          }}
+          validators={{ onChange: patientRegisterFormSchema.shape.email }}
         >
           {(field) => (
             <Field>
@@ -185,14 +169,7 @@ export function RegisterForm() {
         {/* Password */}
         <form.Field
           name="password"
-          validators={{
-            onChange: (value) => {
-              if (!value) return "Password is required";
-              if (value.length < 8)
-                return "Password must be at least 8 characters";
-              return undefined;
-            },
-          }}
+          validators={{ onChange: patientRegisterFormSchema.shape.password }}
         >
           {(field) => (
             <Field>
@@ -225,9 +202,7 @@ export function RegisterForm() {
         <div className="grid grid-cols-2 gap-3">
           <form.Field
             name="phone"
-            validators={{
-              onChange: (value) => validateRequired(value, "Phone"),
-            }}
+            validators={{ onChange: patientRegisterFormSchema.shape.phone }}
           >
             {(field) => (
               <Field>
@@ -258,9 +233,7 @@ export function RegisterForm() {
 
           <form.Field
             name="nic"
-            validators={{
-              onChange: (value) => validateRequired(value, "NIC"),
-            }}
+            validators={{ onChange: patientRegisterFormSchema.shape.nic }}
           >
             {(field) => (
               <Field>
@@ -292,21 +265,54 @@ export function RegisterForm() {
       </div>
 
       <form.Subscribe
-        selector={(state) => [state.canSubmit, state.isSubmitting]}
+        selector={(state) => [
+          state.values.email,
+          state.values.password,
+          state.values.firstName,
+          state.values.lastName,
+          state.values.phone,
+          state.values.nic,
+          state.canSubmit,
+          state.isSubmitting,
+        ]}
       >
-        {([canSubmit, isSubmitting]) => (
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={!canSubmit || isSubmitting}
-          >
-            {isSubmitting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              "Create Account"
-            )}
-          </Button>
-        )}
+        {([
+          email,
+          password,
+          firstName,
+          lastName,
+          phone,
+          nic,
+          canSubmit,
+          isSubmitting,
+        ]) => {
+          const hasRequiredFields = [
+            email,
+            password,
+            firstName,
+            lastName,
+            phone,
+            nic,
+          ].every((value) => String(value).trim().length > 0);
+
+          if (!hasRequiredFields) {
+            return null;
+          }
+
+          return (
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={!Boolean(canSubmit) || Boolean(isSubmitting)}
+            >
+              {isSubmitting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                "Create Account"
+              )}
+            </Button>
+          );
+        }}
       </form.Subscribe>
     </form>
   );
