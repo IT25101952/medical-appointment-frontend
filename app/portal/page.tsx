@@ -32,21 +32,21 @@ export default function LoginPage() {
         */}
         <div className="flex-1 w-full flex flex-col justify-center p-8 md:p-10 rounded-3xl border border-border/60 bg-card/50 shadow-sm">
           <div className="flex flex-col space-y-2 text-center lg:text-left mb-6">
-            <h1 className="text-3xl font-bold tracking-tight">Welcome back</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Portal Login</h1>
             <p className="text-sm text-muted-foreground">
-              Please enter your medical ID or email address to continue.
+              Staff, doctors, and admins can sign in here.
             </p>
           </div>
 
-          <LoginForm />
+          <LoginForm audience="portal" />
 
           <p className="text-center text-sm text-muted-foreground pt-4 border-t border-border/10 mt-6">
-            Don&apos;t have an account?{" "}
+            Patient account?{" "}
             <Link
-              href="/auth/register"
+              href="/patient/login"
               className="text-primary font-semibold hover:underline underline-offset-4 transition-colors"
             >
-              Register Now
+              Use Patient Login
             </Link>
           </p>
         </div>
