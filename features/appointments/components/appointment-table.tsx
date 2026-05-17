@@ -32,9 +32,6 @@ export function AppointmentTable({
       render: (appointment) => (
         <div className="space-y-1">
           <p className="text-sm">{appointment.appointmentNumber}</p>
-          <p className="text-xs text-muted-foreground">
-            {appointment.appointmentType}
-          </p>
         </div>
       ),
     },
