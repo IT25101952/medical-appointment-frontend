@@ -12,6 +12,7 @@ import { LabResultResponse } from "../types/lab-result.types";
 
 interface CurrentUser {
   userId: number;
+  patientId?: number;
   roleType: number;
 }
 
@@ -66,8 +67,9 @@ export function PatientLabResults() {
   }, []);
 
   useEffect(() => {
-    if (patient?.userId) {
-      loadResults(patient.userId);
+    const patientId = patient?.patientId || patient?.userId;
+    if (patientId) {
+      loadResults(patientId);
     }
   }, [patient, loadResults]);
 
@@ -88,7 +90,7 @@ export function PatientLabResults() {
         <Button
           variant="outline"
           size="sm"
-          disabled={!patient?.userId || loading}
+          disabled={!(patient?.patientId || patient?.userId) || loading}
           onClick={() => loadResults()}
         >
           <RefreshCcw className="mr-2 h-4 w-4" />

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import {
+  AlertCircle,
   Edit3,
   Eye,
   FilePlus,
@@ -81,7 +82,17 @@ function allRequiredFieldsSet(values: LabResultValues) {
   );
 }
 
-export function LabResultManagement() {
+interface LabResultManagementProps {
+  title?: string;
+  description?: string;
+  canManage?: boolean;
+}
+
+export function LabResultManagement({
+  title = "Lab Results",
+  description = "Create and update patient lab results by appointment and test.",
+  canManage = true,
+}: LabResultManagementProps) {
   const [results, setResults] = useState<LabResultResponse[]>([]);
   const [patientIdFilter, setPatientIdFilter] = useState("");
   const [loading, setLoading] = useState(false);
@@ -189,16 +200,18 @@ export function LabResultManagement() {
             <FlaskConical className="h-3.5 w-3.5" />
             Laboratory results
           </div>
-          <h1 className="text-2xl font-semibold">Lab Results</h1>
+          <h1 className="text-2xl font-semibold">{title}</h1>
           <p className="max-w-2xl text-sm text-muted-foreground">
-            Create and update patient lab results by appointment and test.
+            {description}
           </p>
         </div>
 
-        <Button size="sm" onClick={openCreateDialog}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Result
-        </Button>
+        {canManage && (
+          <Button size="sm" onClick={openCreateDialog}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Result
+          </Button>
+        )}
       </div>
 
       <Card className="border-border/60 bg-card/80">
@@ -280,14 +293,27 @@ export function LabResultManagement() {
                       <Eye className="mr-2 h-4 w-4" />
                       View
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => openEditDialog(result)}
-                    >
-                      <Edit3 className="mr-2 h-4 w-4" />
-                      Edit
-                    </Button>
+                    {canManage && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openEditDialog(result)}
+                        >
+                          <Edit3 className="mr-2 h-4 w-4" />
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled
+                          title="The backend does not expose DELETE /lab-results/{id}."
+                        >
+                          <AlertCircle className="mr-2 h-4 w-4" />
+                          Delete unavailable
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               </CardContent>

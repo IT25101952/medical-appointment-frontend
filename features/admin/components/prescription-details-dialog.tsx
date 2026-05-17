@@ -16,8 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { X, Calendar, User, Clipboard, Pill, FileText } from "lucide-react";
+import { Calendar, User, Clipboard, Pill, FileText } from "lucide-react";
 import {
   PrescriptionResponse,
   PrescriptionItemResponse,

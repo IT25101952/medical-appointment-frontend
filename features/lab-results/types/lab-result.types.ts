@@ -22,6 +22,7 @@ export interface LabResultResponse {
   referenceRange: string;
   status: LabResultStatus | string;
   remarks?: string | null;
+  testDate?: string | null;
   createdAt: string;
   updatedAt: string;
 }

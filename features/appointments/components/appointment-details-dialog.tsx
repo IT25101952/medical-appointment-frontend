@@ -26,9 +26,14 @@ import { AppointmentLinkedRecords } from "./appointment-linked-records";
 interface Props {
   appointment: AppointmentResponse | null;
   onClose: () => void;
+  linkedRecordsRefreshKey?: number;
 }
 
-export function AppointmentDetailsDialog({ appointment, onClose }: Props) {
+export function AppointmentDetailsDialog({
+  appointment,
+  onClose,
+  linkedRecordsRefreshKey,
+}: Props) {
   if (!appointment) return null;
 
   return (
@@ -100,7 +105,10 @@ export function AppointmentDetailsDialog({ appointment, onClose }: Props) {
             </p>
           </div>
 
-          <AppointmentLinkedRecords appointmentId={appointment.appointmentId} />
+          <AppointmentLinkedRecords
+            appointmentId={appointment.appointmentId}
+            refreshKey={linkedRecordsRefreshKey}
+          />
         </div>
       </DialogContent>
     </Dialog>

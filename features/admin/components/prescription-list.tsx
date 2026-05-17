@@ -14,8 +14,11 @@ import {
   Label,
 } from "@/components/ui";
 import { highlightText } from "@/lib/highlight-search";
+import { apiRequest } from "@/lib/api-client";
+import { getErrorMessage } from "@/lib/utils";
+import { toast } from "sonner";
 import { PrescriptionDetailsDialog } from "./prescription-details-dialog";
-import { Prescription as FullPrescription } from "@/lib/services/prescription-service";
+import type { PrescriptionResponse } from "@/types/prescription-types";
 
 interface PrescriptionListItem {
   prescriptionId: number;
@@ -52,7 +55,10 @@ export function PrescriptionList({
   data: PrescriptionListItem[];
 }) {
   const [selectedPrescription, setSelectedPrescription] =
-    useState<FullPrescription | null>(null);
+    useState<PrescriptionResponse | null>(null);
+  const [loadingPrescriptionId, setLoadingPrescriptionId] = useState<
+    number | null
+  >(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   const deferredSearchQuery = useDeferredValue(searchQuery);
@@ -126,6 +132,25 @@ export function PrescriptionList({
     [deferredSearchQuery],
   );
 
+  async function viewPrescription(prescription: PrescriptionListItem) {
+    setLoadingPrescriptionId(prescription.prescriptionId);
+    try {
+      const details = await apiRequest<PrescriptionResponse>(
+        `/prescription/${prescription.prescriptionId}`,
+        {
+          method: "GET",
+          cache: "no-store",
+        },
+      );
+
+      setSelectedPrescription(details);
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Could not load prescription"));
+    } finally {
+      setLoadingPrescriptionId(null);
+    }
+  }
+
   return (
     <>
       <Card className="border-border/60 bg-card/80 backdrop-blur mb-6">
@@ -153,13 +178,15 @@ export function PrescriptionList({
       <DataTable
         columns={columns}
         data={filteredPrescriptions}
-        onView={(p) =>
-          setSelectedPrescription(p as unknown as FullPrescription)
-        }
+        onView={viewPrescription}
         pageable={true}
         pageSize={10}
         showActions={true}
-        emptyMessage="No prescriptions found."
+        emptyMessage={
+          loadingPrescriptionId
+            ? `Loading prescription #${loadingPrescriptionId}...`
+            : "No prescriptions found."
+        }
       />
 
       <PrescriptionDetailsDialog
