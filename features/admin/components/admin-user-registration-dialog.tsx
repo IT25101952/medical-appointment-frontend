@@ -118,6 +118,12 @@ function compactPayload(payload: Record<string, unknown>) {
   );
 }
 
+function getRegisterEndpoint(roleType: number) {
+  if (roleType === 3) return "/auth/register/doctor";
+  if (roleType === 2) return "/auth/register/staff";
+  return "/auth/register/admin";
+}
+
 export function AdminUserRegistrationDialog({
   open,
   onOpenChange,
@@ -132,7 +138,9 @@ export function AdminUserRegistrationDialog({
   const allowedRoleOptions = useMemo(() => {
     return ROLE_OPTIONS.filter((role) => {
       if (role.value === 1) {
-        return currentUser?.roleType === 1 && hasFullAccess(currentUser.accessLevel);
+        return (
+          currentUser?.roleType === 1 && hasFullAccess(currentUser.accessLevel)
+        );
       }
 
       return currentUser?.roleType === 1;
@@ -207,7 +215,7 @@ export function AdminUserRegistrationDialog({
 
     setIsLoading(true);
     try {
-      await apiRequest("/users", {
+      await apiRequest(getRegisterEndpoint(selectedRole), {
         method: "POST",
         body: JSON.stringify(buildPayload()),
       });
@@ -312,7 +320,9 @@ export function AdminUserRegistrationDialog({
               type="date"
               value={values.dateOfBirth}
               onChange={(value) => updateValue("dateOfBirth", value)}
-              icon={<CalendarDays className="size-4 text-muted-foreground/60" />}
+              icon={
+                <CalendarDays className="size-4 text-muted-foreground/60" />
+              }
             />
             <Field>
               <FieldLabel>Gender *</FieldLabel>
@@ -348,7 +358,9 @@ export function AdminUserRegistrationDialog({
                 label="Specialization *"
                 value={values.specialization}
                 onChange={(value) => updateValue("specialization", value)}
-                icon={<Stethoscope className="size-4 text-muted-foreground/60" />}
+                icon={
+                  <Stethoscope className="size-4 text-muted-foreground/60" />
+                }
                 placeholder="CARDIOLOGY"
               />
               <TextInput
@@ -362,7 +374,9 @@ export function AdminUserRegistrationDialog({
                 label="Qualification *"
                 value={values.qualification}
                 onChange={(value) => updateValue("qualification", value)}
-                icon={<GraduationCap className="size-4 text-muted-foreground/60" />}
+                icon={
+                  <GraduationCap className="size-4 text-muted-foreground/60" />
+                }
                 placeholder="MBBS, MD Cardiology"
               />
               <TextInput
