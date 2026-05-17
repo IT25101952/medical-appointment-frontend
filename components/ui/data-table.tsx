@@ -33,7 +33,7 @@ interface DataTableProps<T> {
   showActions?: boolean;
 }
 
-export function DataTable<T extends Record<string, unknown>>({
+export function DataTable<T extends object>({
   columns,
   data,
   onRowClick,
@@ -65,23 +65,23 @@ export function DataTable<T extends Record<string, unknown>>({
 
   return (
     <div className={cn("space-y-4", className)}>
-      <ScrollArea className="overflow-hidden rounded-2xl border border-border/60 bg-card">
-        <Table className="min-w-[960px]" data-testid="data-table">
+      <ScrollArea className="bg-card rounded-lg border border-border overflow-x-auto">
+        <Table className="min-w-[1000px]" data-testid="data-table">
           <TableHeader>
-            <TableRow className="bg-muted/45 hover:bg-muted/45">
+            <TableRow className="bg-muted/30">
               {columns.map((col, idx) => (
                 <TableHead
                   key={idx}
                   className={
                     col.className ||
-                    "px-5 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+                    "px-4 py-2 text-left text-xs font-medium tracking-wide text-muted-foreground"
                   }
                 >
                   {col.header}
                 </TableHead>
               ))}
               {showActions && (
-                <TableHead className="w-[72px] px-5 py-3 text-center text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                <TableHead className="w-[72px] px-4 py-2 text-center text-xs font-medium tracking-wide text-muted-foreground">
                   Actions
                 </TableHead>
               )}
@@ -93,7 +93,7 @@ export function DataTable<T extends Record<string, unknown>>({
               <TableRow>
                 <TableCell
                   colSpan={columns.length + (showActions ? 1 : 0)}
-                  className="py-10 text-center text-sm text-muted-foreground"
+                  className="text-center text-sm py-6 text-muted-foreground"
                 >
                   {emptyMessage}
                 </TableCell>
@@ -102,13 +102,13 @@ export function DataTable<T extends Record<string, unknown>>({
               paginatedData.map((row, rIdx) => (
                 <TableRow
                   key={rIdx}
-                  className="group transition-colors hover:bg-muted/25"
+                  className="hover:bg-muted/20"
                   onClick={() => onRowClick?.(row)}
                 >
                   {columns.map((col, cIdx) => (
                     <TableCell
                       key={cIdx}
-                      className={col.className ?? "px-5 py-4 align-middle"}
+                      className={col.className ?? "px-4 py-2 align-middle"}
                     >
                       {col.render
                         ? col.render(row)
@@ -123,7 +123,7 @@ export function DataTable<T extends Record<string, unknown>>({
                   ))}
 
                   {showActions && (
-                    <TableCell className="px-5 py-4 text-center align-middle">
+                    <TableCell className="px-4 py-2 text-center align-middle">
                       <div className="flex items-center justify-center gap-2">
                         {onView && (
                           <Button

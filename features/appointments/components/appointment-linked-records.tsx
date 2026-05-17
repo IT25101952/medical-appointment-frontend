@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { apiRequest } from "@/lib/api-client";
 import { getErrorMessage } from "@/lib/utils";
 import { labOrderApi } from "@/features/lab-orders/api/lab-order.api";
+import { LabOrderDetailsDialog } from "@/features/lab-orders/components/lab-order-details-dialog";
 import type { LabOrderResponse } from "@/features/lab-orders/types/lab-order.types";
 import { PrescriptionDetailsDialog } from "@/features/admin/components/prescription-details-dialog";
 import type { PrescriptionResponse } from "@/types/prescription-types";
@@ -27,11 +28,14 @@ export function AppointmentLinkedRecords({
   appointmentId,
   refreshKey = 0,
 }: Props) {
-  const [prescription, setPrescription] =
-    useState<PrescriptionResponse | null>(null);
+  const [prescription, setPrescription] = useState<PrescriptionResponse | null>(
+    null,
+  );
   const [labOrders, setLabOrders] = useState<LabOrderResponse[]>([]);
   const [selectedPrescription, setSelectedPrescription] =
     useState<PrescriptionResponse | null>(null);
+  const [selectedLabOrder, setSelectedLabOrder] =
+    useState<LabOrderResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -111,20 +115,14 @@ export function AppointmentLinkedRecords({
           }
           action={
             labOrders.length > 0 ? (
-              <div className="space-y-2 text-xs">
-                {labOrders.map((order) => (
-                  <div key={order.labOrderId} className="rounded-md border p-2">
-                    <p className="font-medium">Lab Order #{order.labOrderId}</p>
-                    <p className="text-muted-foreground">
-                      {order.laboratoryName}
-                    </p>
-                    <p className="text-muted-foreground">
-                      {order.items.length} test
-                      {order.items.length === 1 ? "" : "s"}
-                    </p>
-                  </div>
-                ))}
-              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setSelectedLabOrder(labOrders[0])}
+              >
+                View Details
+              </Button>
             ) : null
           }
         />
@@ -133,6 +131,13 @@ export function AppointmentLinkedRecords({
       <PrescriptionDetailsDialog
         prescription={selectedPrescription}
         onClose={() => setSelectedPrescription(null)}
+      />
+
+      <LabOrderDetailsDialog
+        labOrder={selectedLabOrder}
+        labOrders={labOrders}
+        onSelectLabOrder={(order) => setSelectedLabOrder(order)}
+        onClose={() => setSelectedLabOrder(null)}
       />
     </>
   );

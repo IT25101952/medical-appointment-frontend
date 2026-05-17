@@ -30,7 +30,7 @@ export default function AppointmentsPage() {
         {canManage && (
           <Button asChild>
             <Link href="/appointments/new">
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="h-4 w-4" />
               New Appointment
             </Link>
           </Button>

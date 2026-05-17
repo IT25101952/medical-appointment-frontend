@@ -1,5 +1,6 @@
 export { labOrderApi } from "./api/lab-order.api";
 export { LabOrderManagement } from "./components/lab-order-management";
+export { LabOrderDetailsDialog } from "./components/lab-order-details-dialog";
 export {
   labOrderItemSchema,
   labOrderSchema,

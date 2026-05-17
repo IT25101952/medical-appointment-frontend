@@ -1,6 +1,12 @@
 "use client";
 
-import { useDeferredValue, useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   Button,
   Input,
@@ -20,6 +26,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui";
+import type { Column } from "@/components/ui";
+import { PaginationControls } from "@/features/admin/components/pagination-controls";
 import { highlightText } from "@/lib/highlight-search";
 import { Plus, RefreshCcw, Edit3, Trash2, Calendar } from "lucide-react";
 import { toast } from "sonner";
@@ -76,7 +84,8 @@ export default function AdminRoomSchedulePage() {
   const [schedules, setSchedules] = useState<RoomScheduleResponse[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
   const [doctors, setDoctors] = useState<UserOption[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize, setPageSize] = useState(10);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -86,6 +95,44 @@ export default function AdminRoomSchedulePage() {
     useState<RoomScheduleResponse | null>(null);
 
   const deferredSearchQuery = useDeferredValue(searchQuery);
+
+  const openEditDialog = useCallback(
+    (schedule: RoomScheduleResponse) => {
+      const matchedRoom = rooms.find(
+        (room) => String(room.roomNumber) === String(schedule.roomNumber),
+      );
+
+      const matchedDoctor = doctors.find(
+        (doctor) =>
+          normalizeDoctorName(getDoctorDisplayName(doctor)) ===
+          normalizeDoctorName(schedule.doctorName),
+      );
+
+      setSelectedSchedule(schedule);
+      setFormValues({
+        roomId: matchedRoom?.roomId || 0,
+        doctorId: matchedDoctor?.userId || 0,
+        dayOfWeek: schedule.dayOfWeek,
+        startTime: schedule.startTime,
+        endTime: schedule.endTime,
+        selectedDate: new Date().toISOString().split("T")[0],
+      });
+
+      if (!matchedRoom || !matchedDoctor) {
+        toast.warning(
+          "Could not fully prefill room/doctor. Please re-select before saving.",
+        );
+      }
+
+      setDialogOpen(true);
+    },
+    [doctors, rooms],
+  );
+
+  const openDeleteDialog = useCallback((schedule: RoomScheduleResponse) => {
+    setSelectedSchedule(schedule);
+    setDeleteOpen(true);
+  }, []);
 
   const filteredSchedules = useMemo(() => {
     const query = normalize(deferredSearchQuery);
@@ -106,82 +153,87 @@ export default function AdminRoomSchedulePage() {
     });
   }, [deferredSearchQuery, schedules]);
 
-  const columns = useMemo(
-    () =>
-      [
-        {
-          header: "Schedule ID",
-          render: (row: any) => {
-            const schedule = row as RoomScheduleResponse;
-            return highlightText(
-              schedule.roomScheduleId?.toString() || "",
-              deferredSearchQuery,
-            );
-          },
-        },
-        {
-          header: "Room",
-          render: (row: any) => {
-            const schedule = row as RoomScheduleResponse;
-            return highlightText(
-              `Room ${schedule.roomNumber}`,
-              deferredSearchQuery,
-            );
-          },
-        },
-        {
-          header: "Doctor",
-          render: (row: any) => {
-            const schedule = row as RoomScheduleResponse;
-            return highlightText(
-              schedule.doctorName || "",
-              deferredSearchQuery,
-            );
-          },
-        },
-        {
-          header: "Day",
-          render: (row: any) => {
-            const schedule = row as RoomScheduleResponse;
-            return highlightText(schedule.dayOfWeek || "", deferredSearchQuery);
-          },
-        },
-        {
-          header: "Time Slot",
-          render: (row: any) => {
-            const schedule = row as RoomScheduleResponse;
-            return highlightText(
-              `${schedule.startTime} - ${schedule.endTime}`,
-              deferredSearchQuery,
-            );
-          },
-        },
-        {
-          header: "Actions",
-          render: (row: any) => {
-            const schedule = row as RoomScheduleResponse;
-            return (
-              <div className="flex flex-wrap justify-center gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => openEditDialog(schedule)}
-                >
-                  <Edit3 className="mr-2 h-4 w-4" /> Edit
-                </Button>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => openDeleteDialog(schedule)}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" /> Delete
-                </Button>
-              </div>
-            );
-          },
-        },
-      ] as const,
-    [deferredSearchQuery, openEditDialog, openDeleteDialog],
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredSchedules.length / pageSize),
+  );
+
+  const paginatedSchedules = useMemo(() => {
+    const start = currentPage * pageSize;
+    return filteredSchedules.slice(start, start + pageSize);
+  }, [currentPage, filteredSchedules, pageSize]);
+
+  const columns = useMemo<Column<RoomScheduleResponse>[]>(
+    () => [
+      {
+        header: "Schedule ID",
+        className:
+          "w-[80px] px-4 py-2 text-left text-xs font-medium tracking-wide text-muted-foreground",
+        render: (schedule) =>
+          highlightText(
+            schedule.roomScheduleId?.toString() || "",
+            deferredSearchQuery,
+          ),
+      },
+      {
+        header: "Room",
+        className:
+          "w-[180px] px-4 py-2 text-left text-xs font-medium tracking-wide text-muted-foreground",
+        render: (schedule) =>
+          highlightText(
+            `Room ${String(schedule.roomNumber ?? "")}`,
+            deferredSearchQuery,
+          ),
+      },
+      {
+        header: "Doctor",
+        className:
+          "w-[220px] px-4 py-2 text-left text-xs font-medium tracking-wide text-muted-foreground",
+        render: (schedule) =>
+          highlightText(schedule.doctorName || "", deferredSearchQuery),
+      },
+      {
+        header: "Day",
+        className:
+          "w-[140px] px-4 py-2 text-left text-xs font-medium tracking-wide text-muted-foreground",
+        render: (schedule) =>
+          highlightText(schedule.dayOfWeek || "", deferredSearchQuery),
+      },
+      {
+        header: "Time Slot",
+        className:
+          "w-[160px] px-4 py-2 text-left text-xs font-medium tracking-wide text-muted-foreground",
+        render: (schedule) =>
+          highlightText(
+            `${schedule.startTime} - ${schedule.endTime}`,
+            deferredSearchQuery,
+          ),
+      },
+      {
+        header: "Actions",
+        className:
+          "w-[180px] px-4 py-2 text-center text-xs font-medium tracking-wide text-muted-foreground",
+        render: (schedule) => (
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => openEditDialog(schedule)}
+            >
+              <Edit3 className="h-4 w-4" /> Edit
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => openDeleteDialog(schedule)}
+            >
+              <Trash2 className="h-4 w-4" /> Delete
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    [deferredSearchQuery, openDeleteDialog, openEditDialog],
   );
 
   const [formValues, setFormValues] = useState<FormValues>({
@@ -192,10 +244,6 @@ export default function AdminRoomSchedulePage() {
     endTime: "",
     selectedDate: new Date().toISOString().split("T")[0],
   });
-
-  useEffect(() => {
-    fetchData();
-  }, []);
 
   function normalizeDoctorName(name: string): string {
     return name
@@ -208,37 +256,7 @@ export default function AdminRoomSchedulePage() {
     return `Dr. ${doctor.lastName}`;
   }
 
-  async function getAllSchedulesForDoctors(doctorsList: UserOption[]) {
-    const settled = await Promise.allSettled(
-      doctorsList.map((doctor) =>
-        roomScheduleApi
-          .getAllDoctorSchedules(doctor.userId)
-          .then((schedules) => ({
-            doctorId: doctor.userId,
-            schedules,
-          })),
-      ),
-    );
-
-    const merged: RoomScheduleResponse[] = [];
-    for (const item of settled) {
-      if (item.status === "fulfilled") {
-        merged.push(...(item.value.schedules || []));
-      }
-    }
-
-    const uniqueById = new Map<number, RoomScheduleResponse>();
-    for (const schedule of merged) {
-      uniqueById.set(schedule.roomScheduleId, schedule);
-    }
-
-    return Array.from(uniqueById.values()).sort(
-      (a, b) => a.roomScheduleId - b.roomScheduleId,
-    );
-  }
-
-  async function fetchData() {
-    setIsLoading(true);
+  const fetchData = useCallback(async () => {
     try {
       const [roomsData, doctorsData] = await Promise.all([
         getRooms().catch(() => []),
@@ -247,18 +265,20 @@ export default function AdminRoomSchedulePage() {
           cache: "no-store",
         }).catch(() => []),
       ]);
+      const allSchedules = await roomScheduleApi.getAll().catch(() => []);
 
-      const schedulesData = await getAllSchedulesForDoctors(doctorsData || []);
-
-      setSchedules(schedulesData);
+      setSchedules(allSchedules || []);
+      setCurrentPage(0);
       setRooms(roomsData || []);
       setDoctors(doctorsData || []);
     } catch (error) {
       toast.error(getErrorMessage(error));
-    } finally {
-      setIsLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   function openCreateDialog() {
     setSelectedSchedule(null);
@@ -272,41 +292,6 @@ export default function AdminRoomSchedulePage() {
       selectedDate: today,
     });
     setDialogOpen(true);
-  }
-
-  function openEditDialog(schedule: RoomScheduleResponse) {
-    const matchedRoom = rooms.find(
-      (room) => String(room.roomNumber) === String(schedule.roomNumber),
-    );
-
-    const matchedDoctor = doctors.find(
-      (doctor) =>
-        normalizeDoctorName(getDoctorDisplayName(doctor)) ===
-        normalizeDoctorName(schedule.doctorName),
-    );
-
-    setSelectedSchedule(schedule);
-    setFormValues({
-      roomId: matchedRoom?.roomId || 0,
-      doctorId: matchedDoctor?.userId || 0,
-      dayOfWeek: schedule.dayOfWeek,
-      startTime: schedule.startTime,
-      endTime: schedule.endTime,
-      selectedDate: new Date().toISOString().split("T")[0],
-    });
-
-    if (!matchedRoom || !matchedDoctor) {
-      toast.warning(
-        "Could not fully prefill room/doctor. Please re-select before saving.",
-      );
-    }
-
-    setDialogOpen(true);
-  }
-
-  function openDeleteDialog(schedule: RoomScheduleResponse) {
-    setSelectedSchedule(schedule);
-    setDeleteOpen(true);
   }
 
   async function handleSave() {
@@ -383,11 +368,11 @@ export default function AdminRoomSchedulePage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button onClick={fetchData} size="sm" variant="outline">
-            <RefreshCcw className="mr-2 h-4 w-4" /> Refresh
+          <Button onClick={() => fetchData()} size="sm" variant="outline">
+            <RefreshCcw className="h-4 w-4" /> Refresh
           </Button>
           <Button onClick={openCreateDialog} size="sm">
-            <Plus className="mr-2 h-4 w-4" /> New Schedule
+            <Plus className="h-4 w-4" /> New Schedule
           </Button>
         </div>
       </div>
@@ -414,14 +399,27 @@ export default function AdminRoomSchedulePage() {
         </CardContent>
       </Card>
 
-      <DataTable
-        columns={columns}
-        data={filteredSchedules}
-        pageable={true}
-        pageSize={10}
-        showActions={false}
-        emptyMessage="No schedules found"
-      />
+      <div className="overflow-hidden w-auto rounded-lg border border-border bg-card">
+        <DataTable
+          columns={columns}
+          data={paginatedSchedules}
+          pageable={false}
+          showActions={false}
+          emptyMessage="No schedules found"
+        />
+
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          pageSize={pageSize}
+          pageSizeOptions={[5, 10, 20, 50]}
+          onPageChange={(p) => setCurrentPage(p)}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setCurrentPage(0);
+          }}
+        />
+      </div>
 
       <StyledDialog
         open={dialogOpen}
@@ -457,7 +455,7 @@ export default function AdminRoomSchedulePage() {
               <SelectContent>
                 {rooms.map((room) => (
                   <SelectItem key={room.roomId} value={String(room.roomId)}>
-                    Room {room.roomNumber}
+                    Room {String(room.roomNumber ?? "")}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -496,7 +494,7 @@ export default function AdminRoomSchedulePage() {
                   variant="outline"
                   className="w-full justify-start text-left font-normal"
                 >
-                  <Calendar className="mr-2 h-4 w-4" />
+                  <Calendar className="h-4 w-4" />
                   {formatDateForDisplay(formValues.selectedDate) ||
                     "Pick a date"}
                 </Button>

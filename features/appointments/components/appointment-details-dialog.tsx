@@ -51,7 +51,7 @@ export function AppointmentDetailsDialog({
               <p className="text-sm text-muted-foreground">
                 Appointment Reference
               </p>
-              <p className="text-lg">#{appointment.appointmentId}</p>
+              <p className="text-lg">{appointment.appointmentId}</p>
             </div>
 
             <AppointmentStatusBadge status={appointment.status} />

@@ -165,7 +165,7 @@ const NavigationContainer = () => {
           <Link href="/patient/login" passHref>
             <Button
               variant="outline"
-              className="hidden sm:inline-flex font-medium"
+              className="hidden sm:inline-flex px-4 py-2 font-medium"
             >
               Login
             </Button>
@@ -174,7 +174,7 @@ const NavigationContainer = () => {
           <Link href="/payment/online-payment" passHref>
             <Button
               variant="default"
-              className="hidden sm:inline-flex font-medium"
+              className="hidden sm:inline-flex px-4 py-2 font-medium"
             >
               Online Payment
             </Button>
@@ -235,7 +235,7 @@ const NavigationContainer = () => {
                 </Link>
               </nav>
               <a href="/patient/login">
-                <Button className="">Book Appointment</Button>
+                <Button className="px-4 py-2">Book Appointment</Button>
               </a>
             </div>
           </SheetContent>

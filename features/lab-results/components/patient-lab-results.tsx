@@ -35,19 +35,22 @@ export function PatientLabResults() {
   const [results, setResults] = useState<LabResultResponse[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadResults = useCallback(async (patientId = patient?.userId) => {
-    if (!patientId) return;
+  const loadResults = useCallback(
+    async (patientId = patient?.userId) => {
+      if (!patientId) return;
 
-    setLoading(true);
-    try {
-      const data = await labResultApi.getByPatient(patientId);
-      setResults(data || []);
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Could not load lab results"));
-    } finally {
-      setLoading(false);
-    }
-  }, [patient?.userId]);
+      setLoading(true);
+      try {
+        const data = await labResultApi.getByPatient(patientId);
+        setResults(data || []);
+      } catch (error) {
+        toast.error(getErrorMessage(error, "Could not load lab results"));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [patient?.userId],
+  );
 
   useEffect(() => {
     async function loadPatient() {
@@ -93,7 +96,7 @@ export function PatientLabResults() {
           disabled={!(patient?.patientId || patient?.userId) || loading}
           onClick={() => loadResults()}
         >
-          <RefreshCcw className="mr-2 h-4 w-4" />
+          <RefreshCcw className="h-4 w-4" />
           Refresh
         </Button>
       </div>

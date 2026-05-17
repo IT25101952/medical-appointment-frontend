@@ -299,14 +299,14 @@ export default function AdminRoomsPage() {
                           variant="outline"
                           onClick={() => openEditDialog(room)}
                         >
-                          <Edit3 className="mr-2 h-4 w-4" /> Edit
+                          <Edit3 className="h-4 w-4" /> Edit
                         </Button>
                         <Button
                           size="sm"
                           variant="destructive"
                           onClick={() => openDeleteDialog(room)}
                         >
-                          <Trash2 className="mr-2 h-4 w-4" /> Delete
+                          <Trash2 className="h-4 w-4" /> Delete
                         </Button>
                       </div>
                     </td>

@@ -132,6 +132,30 @@
 }
 
 @layer utilities {
+  .app-page {
+    @apply col-start-1 col-end-14 space-y-6;
+  }
+
+  .app-surface {
+    @apply rounded-lg border border-border/60 bg-card/80 shadow-sm;
+  }
+
+  .app-muted-panel {
+    @apply rounded-lg border border-border/60 bg-muted/30;
+  }
+
+  .app-section-title {
+    @apply text-2xl font-semibold tracking-tight;
+  }
+
+  .app-section-description {
+    @apply max-w-2xl text-sm text-muted-foreground;
+  }
+
+  .app-eyebrow {
+    @apply mb-2 inline-flex w-fit items-center gap-2 rounded-md border border-border/70 px-2.5 py-1 text-xs font-medium text-muted-foreground;
+  }
+
   .body-text {
     @apply text-base md:text-xl text-zinc-600 dark:text-zinc-400 font-light leading-relaxed;
   }
@@ -180,5 +204,9 @@
 
   .boxwidth {
     @apply !w-[60vw] !max-w-[1200px] !h-[80vh] rounded-xl overflow-hidden bg-card dark:bg-card p-6;
+  }
+
+  .searchShown {
+    @apply rounded-md border border-border/60 bg-muted/30 px-4 py-3 text-sm text-muted-foreground;
   }
 }

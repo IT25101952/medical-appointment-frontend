@@ -4,8 +4,18 @@ import { useCallback, useEffect, useState } from "react";
 import { MessageSquare, RefreshCcw, Star } from "lucide-react";
 import { toast } from "sonner";
 
-import { Button, Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
-import { FeedbackForm, feedbackApi, type FeedbackResponse } from "@/features/feedback";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui";
+import {
+  FeedbackForm,
+  feedbackApi,
+  type FeedbackResponse,
+} from "@/features/feedback";
 import { apiRequest } from "@/lib/api-client";
 import { getErrorMessage } from "@/lib/utils";
 
@@ -25,18 +35,21 @@ export default function PatientFeedbackPage() {
     loadPatient();
   }, []);
 
-  const loadFeedback = useCallback(async (patientId = patient?.userId) => {
-    if (!patientId) return;
-    setIsLoading(true);
-    try {
-      const data = await feedbackApi.getByPatient(patientId);
-      setFeedback(data || []);
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Could not load feedback"));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [patient?.userId]);
+  const loadFeedback = useCallback(
+    async (patientId = patient?.userId) => {
+      if (!patientId) return;
+      setIsLoading(true);
+      try {
+        const data = await feedbackApi.getByPatient(patientId);
+        setFeedback(data || []);
+      } catch (error) {
+        toast.error(getErrorMessage(error, "Could not load feedback"));
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [patient?.userId],
+  );
 
   useEffect(() => {
     if (patient?.userId) {
@@ -77,7 +90,7 @@ export default function PatientFeedbackPage() {
           onClick={() => loadFeedback()}
           disabled={!patient?.userId || isLoading}
         >
-          <RefreshCcw className="mr-2 h-4 w-4" />
+          <RefreshCcw className="h-4 w-4" />
           Refresh
         </Button>
       </div>
@@ -97,9 +110,7 @@ export default function PatientFeedbackPage() {
 
       <Card className="border-border/60 bg-card/80">
         <CardHeader>
-          <CardTitle className="text-base font-semibold">
-            My Feedback
-          </CardTitle>
+          <CardTitle className="text-base font-semibold">My Feedback</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {isLoading ? (

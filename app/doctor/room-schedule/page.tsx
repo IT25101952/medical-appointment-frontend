@@ -70,7 +70,7 @@ export default function DoctorRoomSchedulePage() {
           </p>
         </div>
         <Button onClick={fetchSchedules} size="sm" variant="outline">
-          <RefreshCcw className="mr-2 h-4 w-4" /> Refresh
+          <RefreshCcw className="h-4 w-4" /> Refresh
         </Button>
       </div>
 

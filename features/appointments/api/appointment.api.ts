@@ -26,6 +26,52 @@ export const appointmentApi = {
     });
   },
 
+  getMyVisits: async (patientId: number) => {
+    const attempts = [
+      () =>
+        apiRequest<AppointmentResponse[]>(`${BASE_URL}/my`, {
+          method: "GET",
+          cache: "no-store",
+        }),
+      () =>
+        apiRequest<AppointmentResponse[]>(`${BASE_URL}/patient/${patientId}`, {
+          method: "GET",
+          cache: "no-store",
+        }),
+    ];
+
+    let lastError: unknown;
+
+    for (const attempt of attempts) {
+      try {
+        const data = await attempt();
+        if (Array.isArray(data)) {
+          return data;
+        }
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    // Compatibility fallback for projects where only a broad list endpoint exists.
+    try {
+      const allAppointments = await apiRequest<AppointmentResponse[]>(
+        BASE_URL,
+        {
+          method: "GET",
+          cache: "no-store",
+        },
+      );
+      return (allAppointments || []).filter(
+        (appointment) => appointment.patientId === patientId,
+      );
+    } catch {
+      throw lastError instanceof Error
+        ? lastError
+        : new Error("Could not load your visits");
+    }
+  },
+
   create: async (payload: AppointmentCreateRequest) => {
     return apiRequest<AppointmentResponse>(BASE_URL, {
       method: "POST",

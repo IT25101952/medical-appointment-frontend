@@ -10,10 +10,10 @@ import { cn, getErrorMessage } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
@@ -45,9 +45,15 @@ import {
   getLaboratories,
   type Laboratory,
 } from "@/lib/services/laboratory-service";
-import { getActiveLabTests, type LabTest } from "@/lib/services/labtest-service";
+import {
+  getActiveLabTests,
+  type LabTest,
+} from "@/lib/services/labtest-service";
 import { labOrderApi } from "@/features/lab-orders/api/lab-order.api";
-import type { LabOrderRequest } from "@/features/lab-orders/types/lab-order.types";
+import type {
+  LabOrderRequest,
+  LabOrderResponse,
+} from "@/features/lab-orders/types/lab-order.types";
 
 interface Props {
   appointments: AppointmentResponse[];
@@ -176,6 +182,7 @@ export function TodayAppointmentsList({ appointments }: Props) {
   const [laboratories, setLaboratories] = useState<Laboratory[]>([]);
   const [labTests, setLabTests] = useState<LabTest[]>([]);
   const [loadingClinicalData, setLoadingClinicalData] = useState(false);
+  const [checkingLabOrder, setCheckingLabOrder] = useState(false);
   const [savingPrescription, setSavingPrescription] = useState(false);
   const [savingLabOrder, setSavingLabOrder] = useState(false);
   const [prescriptionStatus, setPrescriptionStatus] = useState("ACTIVE");
@@ -232,12 +239,40 @@ export function TodayAppointmentsList({ appointments }: Props) {
     loadClinicalData();
   }
 
-  function openLabOrderDialog(appointment: AppointmentResponse) {
-    setClinicalAppointment(appointment);
-    setLaboratoryId(0);
-    setLabOrderItems([createLabOrderItem()]);
-    setLabOrderOpen(true);
-    loadClinicalData();
+  async function findLabOrderForAppointment(appointmentId: number) {
+    const orders = await labOrderApi.search();
+    return (orders || []).find(
+      (order: LabOrderResponse) =>
+        Number(order.appointmentId) === Number(appointmentId),
+    );
+  }
+
+  async function openLabOrderDialog(appointment: AppointmentResponse) {
+    setCheckingLabOrder(true);
+    try {
+      const existingOrder = await findLabOrderForAppointment(
+        appointment.appointmentId,
+      );
+
+      if (existingOrder) {
+        toast.error("Lab order already exists", {
+          description: `Appointment #${appointment.appointmentId} already has lab order #${existingOrder.labOrderId}.`,
+        });
+        setSelectedAppointment(appointment);
+        setLinkedRecordsRefreshKey((current) => current + 1);
+        return;
+      }
+
+      setClinicalAppointment(appointment);
+      setLaboratoryId(0);
+      setLabOrderItems([createLabOrderItem()]);
+      setLabOrderOpen(true);
+      loadClinicalData();
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Could not check lab orders"));
+    } finally {
+      setCheckingLabOrder(false);
+    }
   }
 
   function updatePrescriptionItem(
@@ -251,7 +286,10 @@ export function TodayAppointmentsList({ appointments }: Props) {
     );
   }
 
-  function updateLabOrderItem(index: number, patch: Partial<LabOrderDraftItem>) {
+  function updateLabOrderItem(
+    index: number,
+    patch: Partial<LabOrderDraftItem>,
+  ) {
     setLabOrderItems((current) =>
       current.map((item, itemIndex) =>
         itemIndex === index ? { ...item, ...patch } : item,
@@ -286,8 +324,7 @@ export function TodayAppointmentsList({ appointments }: Props) {
             medicationId: item.medicationId,
             dosage: item.dosage.trim(),
             quantity: item.quantity,
-            specialInstructions:
-              item.specialInstructions.trim() || undefined,
+            specialInstructions: item.specialInstructions.trim() || undefined,
           })),
         }),
       });
@@ -372,7 +409,7 @@ export function TodayAppointmentsList({ appointments }: Props) {
   return (
     <>
       <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-        <ScrollArea className="bg-card rounded-lg border border-border overflow-x-auto">
+        <ScrollArea className="w-full rounded-2xl">
           <Table className="min-w-[1000px]">
             <TableHeader>
               <TableRow className="bg-muted/30">
@@ -397,8 +434,14 @@ export function TodayAppointmentsList({ appointments }: Props) {
                 <TableHead className="px-4 py-2 text-left text-xs font-medium tracking-wide text-muted-foreground min-w-[220px]">
                   Notes
                 </TableHead>
-                <TableHead className="px-4 py-2 text-center text-xs font-medium tracking-wide text-muted-foreground min-w-[340px]">
-                  Action
+                <TableHead className="px-4 py-2 text-center text-xs font-medium tracking-wide text-muted-foreground min-w-[120px]">
+                  View
+                </TableHead>
+                <TableHead className="px-4 py-2 text-center text-xs font-medium tracking-wide text-muted-foreground min-w-[160px]">
+                  Prescription
+                </TableHead>
+                <TableHead className="px-4 py-2 text-center text-xs font-medium tracking-wide text-muted-foreground min-w-[160px]">
+                  Lab Order
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -447,51 +490,64 @@ export function TodayAppointmentsList({ appointments }: Props) {
                     </span>
                   </TableCell>
 
-                  <TableCell className="px-4 py-2">
+                  <TableCell className="px-4 py-2 text-center">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="rounded-xl"
+                      onClick={() => loadAppointment(appointment.appointmentId)}
+                      disabled={
+                        loadingAppointmentId === appointment.appointmentId
+                      }
+                    >
+                      {loadingAppointmentId === appointment.appointmentId
+                        ? "Loading..."
+                        : "View"}
+                    </Button>
+                  </TableCell>
+
+                  <TableCell className="px-4 py-2 text-center">
                     {(() => {
-                      const clinicalAccessMessage =
-                        getClinicalAccessMessage(appointment, now);
+                      const clinicalAccessMessage = getClinicalAccessMessage(
+                        appointment,
+                        now,
+                      );
                       const canModifyClinical = !clinicalAccessMessage;
 
                       return (
-                        <div className="flex flex-wrap justify-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="rounded-xl"
-                            onClick={() =>
-                              loadAppointment(appointment.appointmentId)
-                            }
-                            disabled={
-                              loadingAppointmentId ===
-                              appointment.appointmentId
-                            }
-                          >
-                            {loadingAppointmentId === appointment.appointmentId
-                              ? "Loading..."
-                              : "View"}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="rounded-xl"
-                            onClick={() => openPrescriptionDialog(appointment)}
-                            disabled={!canModifyClinical}
-                            title={clinicalAccessMessage || undefined}
-                          >
-                            Prescription
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="rounded-xl"
-                            onClick={() => openLabOrderDialog(appointment)}
-                            disabled={!canModifyClinical}
-                            title={clinicalAccessMessage || undefined}
-                          >
-                            Lab Order
-                          </Button>
-                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-xl"
+                          onClick={() => openPrescriptionDialog(appointment)}
+                          disabled={!canModifyClinical}
+                          title={clinicalAccessMessage || undefined}
+                        >
+                          Add Prescription
+                        </Button>
+                      );
+                    })()}
+                  </TableCell>
+
+                  <TableCell className="px-4 py-2 text-center">
+                    {(() => {
+                      const clinicalAccessMessage = getClinicalAccessMessage(
+                        appointment,
+                        now,
+                      );
+                      const canModifyClinical = !clinicalAccessMessage;
+
+                      return (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-xl"
+                          onClick={() => openLabOrderDialog(appointment)}
+                          disabled={!canModifyClinical || checkingLabOrder}
+                          title={clinicalAccessMessage || undefined}
+                        >
+                          {checkingLabOrder ? "Checking..." : "Add Lab Order"}
+                        </Button>
                       );
                     })()}
                   </TableCell>
@@ -499,6 +555,8 @@ export function TodayAppointmentsList({ appointments }: Props) {
               ))}
             </TableBody>
           </Table>
+          <ScrollBar orientation="horizontal" />
+          <ScrollBar orientation="vertical" />
         </ScrollArea>
       </div>
       <AppointmentDetailsDialog
@@ -561,7 +619,7 @@ export function TodayAppointmentsList({ appointments }: Props) {
                     ])
                   }
                 >
-                  <Plus className="mr-2 h-4 w-4" />
+                  <Plus className="h-4 w-4" />
                   Add Medication
                 </Button>
               </div>
@@ -652,7 +710,9 @@ export function TodayAppointmentsList({ appointments }: Props) {
                       setPrescriptionItems((current) =>
                         current.length === 1
                           ? current
-                          : current.filter((_, itemIndex) => itemIndex !== index),
+                          : current.filter(
+                              (_, itemIndex) => itemIndex !== index,
+                            ),
                       )
                     }
                     disabled={prescriptionItems.length === 1}
@@ -692,6 +752,11 @@ export function TodayAppointmentsList({ appointments }: Props) {
           </DialogHeader>
 
           <div className="space-y-5">
+            <div className="rounded-md border border-border/60 bg-muted/30 p-3 text-sm text-muted-foreground">
+              Lab orders can be created only during the active appointment time.
+              Only one lab order is allowed for each appointment.
+            </div>
+
             <div className="grid gap-2">
               <Label>Laboratory</Label>
               <Select
@@ -735,7 +800,7 @@ export function TodayAppointmentsList({ appointments }: Props) {
                     ])
                   }
                 >
-                  <Plus className="mr-2 h-4 w-4" />
+                  <Plus className="h-4 w-4" />
                   Add Test
                 </Button>
               </div>
@@ -795,7 +860,9 @@ export function TodayAppointmentsList({ appointments }: Props) {
                       setLabOrderItems((current) =>
                         current.length === 1
                           ? current
-                          : current.filter((_, itemIndex) => itemIndex !== index),
+                          : current.filter(
+                              (_, itemIndex) => itemIndex !== index,
+                            ),
                       )
                     }
                     disabled={labOrderItems.length === 1}
@@ -816,7 +883,10 @@ export function TodayAppointmentsList({ appointments }: Props) {
             >
               Cancel
             </Button>
-            <Button onClick={saveLabOrder} disabled={savingLabOrder}>
+            <Button
+              onClick={saveLabOrder}
+              disabled={savingLabOrder || loadingClinicalData}
+            >
               {savingLabOrder ? "Creating..." : "Create Lab Order"}
             </Button>
           </DialogFooter>

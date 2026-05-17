@@ -85,7 +85,7 @@ export default function PatientDashboard() {
       icon: History,
       title: "Medical History",
       buttonText: "View Records",
-      action: () => router.push("/patient/history"),
+      action: () => router.push("/patient/visits"),
     },
     {
       icon: MessageSquare,
@@ -112,7 +112,7 @@ export default function PatientDashboard() {
         }}
         secondaryButton={{
           text: "View My Visits",
-          onClick: () => router.push("/patient/feedback"),
+          onClick: () => router.push("/patient/visits"),
         }}
         bentoItems={patientItems}
       />

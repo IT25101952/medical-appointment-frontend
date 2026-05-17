@@ -47,4 +47,8 @@ export const roomScheduleApi = {
   ): Promise<RoomScheduleResponse[]> => {
     return await apiRequest(`${BASE_URL}/doctor/${doctorId}`);
   },
+
+  getAll: async (): Promise<RoomScheduleResponse[]> => {
+    return await apiRequest(BASE_URL);
+  },
 };

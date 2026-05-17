@@ -101,7 +101,7 @@ export default function FindDoctorSearch() {
                         >
                           <Check
                             className={cn(
-                              "mr-2 h-4 w-4",
+                              "h-4 w-4",
                               value === spec.value
                                 ? "opacity-100"
                                 : "opacity-0",
