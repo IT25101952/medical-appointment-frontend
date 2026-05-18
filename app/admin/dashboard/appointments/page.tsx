@@ -26,15 +26,6 @@ export default function AppointmentsPage() {
             prescriptions, and lab orders.
           </p>
         </div>
-
-        {canManage && (
-          <Button asChild>
-            <Link href="/appointments/new">
-              <Plus className="h-4 w-4" />
-              New Appointment
-            </Link>
-          </Button>
-        )}
       </div>
 
       {isLoading ? (
