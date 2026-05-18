@@ -1,6 +1,6 @@
 import { apiRequest } from "@/lib/api-client";
-import { PrescriptionList, PaginationControls } from "@/features/admin";
 import { PageHeader } from "@/components/ui/page-header";
+import { AdminPrescriptionsClient } from "./admin-prescriptions-client";
 
 interface PrescriptionListItem {
   prescriptionId: number;
@@ -23,6 +23,7 @@ export default async function AdminPrescriptionsPage({
 }) {
   const params = await searchParams;
   const page = Number(params.page) || 0;
+
   const data = await apiRequest<PrescriptionsResponse>(
     `/prescription?page=${page}&size=5`,
     {
@@ -32,16 +33,17 @@ export default async function AdminPrescriptionsPage({
   );
 
   return (
-    <div className="space-y-6 col-span-1 col-span-13">
+    <div className="col-start-1 col-end-14">
       <PageHeader
         title="Prescriptions"
-        description="Managing medical records"
+        description="View and manage patient prescription records"
       />
 
-      <div className="rounded-3xl border border-border/60 bg-card/50 overflow-hidden shadow-sm">
-        <PrescriptionList data={data.content} />
-        <PaginationControls currentPage={page} totalPages={data.totalPages} />
-      </div>
+      <AdminPrescriptionsClient
+        data={data.content}
+        currentPage={page}
+        totalPages={data.totalPages}
+      />
     </div>
   );
 }
