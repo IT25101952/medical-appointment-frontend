@@ -13,17 +13,20 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Info, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { highlightText } from "@/lib/highlight-search";
 
 export type Column<T> = {
   header: string;
   accessor?: keyof T | string;
   render?: (row: T) => React.ReactNode;
   className?: string;
+  headerClassName?: string;
 };
 
 interface DataTableProps<T> {
   columns: Column<T>[];
   data: T[];
+  searchQuery?: string;
   onRowClick?: (row: T) => void;
   onView?: (row: T) => void;
   emptyMessage?: string;
@@ -31,11 +34,13 @@ interface DataTableProps<T> {
   pageable?: boolean;
   pageSize?: number;
   showActions?: boolean;
+  minWidth?: string;
 }
 
 export function DataTable<T extends object>({
   columns,
   data,
+  searchQuery = "",
   onRowClick,
   onView,
   emptyMessage = "No results found.",
@@ -43,6 +48,7 @@ export function DataTable<T extends object>({
   pageable = true,
   pageSize = 10,
   showActions = true,
+  minWidth = "1000px",
 }: DataTableProps<T>) {
   const [currentPage, setCurrentPage] = React.useState(0);
 
@@ -63,25 +69,36 @@ export function DataTable<T extends object>({
     setCurrentPage((prev) => Math.min(prev + 1, totalPages - 1));
   };
 
+  const getCellValue = (row: T, accessor?: keyof T | string) => {
+    if (!accessor) return "";
+
+    const value = (row as Record<string, unknown>)[accessor as string];
+
+    if (value === null || value === undefined) return "";
+
+    return String(value);
+  };
+
   return (
     <div className={cn("space-y-4", className)}>
       <ScrollArea className="bg-card rounded-lg border border-border overflow-x-auto">
-        <Table className="min-w-[1000px]" data-testid="data-table">
+        <Table className="w-full" style={{ minWidth }} data-testid="data-table">
           <TableHeader>
             <TableRow className="bg-muted/30">
               {columns.map((col, idx) => (
                 <TableHead
                   key={idx}
-                  className={
-                    col.className ||
-                    "px-4 py-2 text-left text-xs font-medium tracking-wide text-muted-foreground"
-                  }
+                  className={cn(
+                    "px-4 py-2 text-left text-xs font-medium tracking-wide text-muted-foreground",
+                    col.headerClassName,
+                  )}
                 >
                   {col.header}
                 </TableHead>
               ))}
+
               {showActions && (
-                <TableHead className="w-[72px] px-4 py-2 text-center text-xs font-medium tracking-wide text-muted-foreground">
+                <TableHead className="w-[130px] px-4 py-2 text-center text-xs font-medium tracking-wide text-muted-foreground">
                   Actions
                 </TableHead>
               )}
@@ -102,23 +119,23 @@ export function DataTable<T extends object>({
               paginatedData.map((row, rIdx) => (
                 <TableRow
                   key={rIdx}
-                  className="hover:bg-muted/20"
+                  className={cn(
+                    "hover:bg-muted/20",
+                    onRowClick && "cursor-pointer",
+                  )}
                   onClick={() => onRowClick?.(row)}
                 >
                   {columns.map((col, cIdx) => (
                     <TableCell
                       key={cIdx}
-                      className={col.className ?? "px-4 py-2 align-middle"}
+                      className={cn("px-4 py-2 align-middle", col.className)}
                     >
                       {col.render
                         ? col.render(row)
-                        : col.accessor
-                          ? String(
-                              (row as Record<string, unknown>)[
-                                col.accessor as string
-                              ],
-                            )
-                          : null}
+                        : highlightText(
+                            getCellValue(row, col.accessor),
+                            searchQuery,
+                          )}
                     </TableCell>
                   ))}
 
@@ -127,15 +144,15 @@ export function DataTable<T extends object>({
                       <div className="flex items-center justify-center gap-2">
                         {onView && (
                           <Button
-                            size="icon-sm"
+                            size="sm"
                             variant="outline"
                             onClick={(e) => {
                               e.stopPropagation();
                               onView(row);
                             }}
                           >
-                            <Info className="size-4" />
-                            <span className="sr-only">View details</span>
+                            <Info className="h-4 w-4" />
+                            View
                           </Button>
                         )}
                       </div>
@@ -153,16 +170,18 @@ export function DataTable<T extends object>({
           <span className="text-sm text-muted-foreground">
             Page {currentPage + 1} of {totalPages}
           </span>
-          <div className="flex gap-2">
+
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={handlePrevious}
               disabled={currentPage === 0}
             >
-              <ChevronLeft className="size-4" />
+              <ChevronLeft className="h-4 w-4" />
               Previous
             </Button>
+
             <Button
               variant="outline"
               size="sm"
@@ -170,13 +189,29 @@ export function DataTable<T extends object>({
               disabled={currentPage === totalPages - 1}
             >
               Next
-              <ChevronRight className="size-4" />
+              <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </div>
       )}
     </div>
   );
+}
+
+export function tableBadgeClassName(
+  type: "primary" | "success" | "danger" | "warning" | "muted",
+) {
+  const base = "rounded-md px-2.5 py-1 text-xs font-medium";
+
+  const variants = {
+    primary: "bg-primary/10 text-primary",
+    success: "bg-green-500/10 text-green-600 dark:text-green-400",
+    danger: "bg-destructive/10 text-destructive",
+    warning: "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400",
+    muted: "bg-muted text-muted-foreground",
+  };
+
+  return cn(base, variants[type]);
 }
 
 export default DataTable;
