@@ -153,28 +153,6 @@ export function PrescriptionList({
 
   return (
     <>
-      <Card className="border-border/60 bg-card/80 backdrop-blur mb-6">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">
-            Search prescriptions
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px] md:items-end">
-          <div className="grid gap-2">
-            <Label htmlFor="prescription-search">Quick search</Label>
-            <Input
-              id="prescription-search"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Search by ID, patient, practitioner, or status"
-            />
-          </div>
-          <div className="rounded-2xl border border-border/60 bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
-            {filteredPrescriptions.length} of {data.length} prescriptions shown
-          </div>
-        </CardContent>
-      </Card>
-
       <DataTable
         columns={columns}
         data={filteredPrescriptions}
